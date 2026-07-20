@@ -5,5 +5,25 @@
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^@app/proto/(.*)$": "<rootDir>/../../../libs/proto/src/$1",
+    "^@app/proto$": "<rootDir>/../../../libs/proto/src",
+    "^@app/common/(.*)$": "<rootDir>/../../../libs/common/src/$1",
+    "^@app/common$": "<rootDir>/../../../libs/common/src",
+    "^@app/database/(.*)$": "<rootDir>/../../../libs/database/src/$1",
+    "^@app/database$": "<rootDir>/../../../libs/database/src",
+    "^@app/auth-service/(.*)$": "<rootDir>/../../../libs/auth-service/src/$1",
+    "^@app/auth-service$": "<rootDir>/../../../libs/auth-service/src",
+    "^@app/rag-service/(.*)$": "<rootDir>/../../../libs/rag-service/src/$1",
+    "^@app/rag-service$": "<rootDir>/../../../libs/rag-service/src",
+    "^@app/chat-service/(.*)$": "<rootDir>/../../../libs/chat-service/src/$1",
+    "^@app/chat-service$": "<rootDir>/../../../libs/chat-service/src",
+    "^@app/speech-service/(.*)$": "<rootDir>/../../../libs/speech-service/src/$1",
+    "^@app/speech-service$": "<rootDir>/../../../libs/speech-service/src",
+    "^@app/ingestion-service/(.*)$": "<rootDir>/../../../libs/ingestion-service/src/$1",
+    "^@app/ingestion-service$": "<rootDir>/../../../libs/ingestion-service/src",
+    "^@app/gateway/(.*)$": "<rootDir>/../../../libs/gateway/src/$1",
+    "^@app/gateway$": "<rootDir>/../../../libs/gateway/src"
   }
 }
