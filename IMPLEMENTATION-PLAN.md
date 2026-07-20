@@ -600,7 +600,7 @@ git commit -m "chore: add docker-compose local stack and production Dockerfile"
 - Create: `libs/proto/src/auth.proto`, `libs/proto/tsproto.config.json` (implicit via CLI flags, see below), `package.json` (add `proto:gen` script)
 
 **Interfaces:**
-- Produces: `npm run proto:gen`, which every later `.proto`-adding task (13, 19, 24, 38) re-runs. Generated output lands in `libs/proto/generated/*.ts` and is imported as `@app/proto/generated/<name>`.
+- Produces: `npm run proto:gen`, which every later `.proto`-adding task (13, 19, 24, 38) re-runs. Generated output lands in `libs/proto/src/generated/*.ts` and is imported as `@app/proto/generated/<name>`.
 
 - [ ] **Step 1: Install codegen tooling**
 
@@ -631,7 +631,7 @@ message PingResponse {
 
 Add to `package.json` `"scripts"`:
 ```json
-"proto:gen": "protoc --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./libs/proto/generated --ts_proto_opt=nestJs=true,addGrpcMetadata=true,outputServices=grpc-js -I libs/proto/src libs/proto/src/*.proto"
+"proto:gen": "protoc --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./libs/proto/src/generated --ts_proto_opt=nestJs=true,addGrpcMetadata=true,outputServices=grpc-js -I libs/proto/src libs/proto/src/*.proto"
 ```
 This requires the `protoc` binary on PATH. Install it:
 ```bash
@@ -639,7 +639,7 @@ npm i -D grpc-tools
 ```
 and adjust the script to use the bundled binary instead of relying on a system install:
 ```json
-"proto:gen": "protoc --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./libs/proto/generated --ts_proto_opt=nestJs=true,addGrpcMetadata=true,outputServices=grpc-js --proto_path=libs/proto/src $(node -e \"console.log(require('fs').readdirSync('libs/proto/src').filter(f=>f.endsWith('.proto')).map(f=>'libs/proto/src/'+f).join(' '))\")"
+"proto:gen": "protoc --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./libs/proto/src/generated --ts_proto_opt=nestJs=true,addGrpcMetadata=true,outputServices=grpc-js --proto_path=libs/proto/src $(node -e \"console.log(require('fs').readdirSync('libs/proto/src').filter(f=>f.endsWith('.proto')).map(f=>'libs/proto/src/'+f).join(' '))\")"
 ```
 If `protoc` still isn't found, install it via your OS package manager (`choco install protoc` on Windows, or download from https://github.com/protocolbuffers/protobuf/releases) and ensure it's on PATH — `grpc-tools` only ships the Node plugin, not `protoc` itself on all platforms.
 
@@ -647,7 +647,7 @@ If `protoc` still isn't found, install it via your OS package manager (`choco in
 
 ```bash
 npm run proto:gen
-ls libs/proto/generated
+ls libs/proto/src/generated
 ```
 Expected: `health.ts` (or similarly named generated file) exists and exports `HealthProbeClient`, `PingRequest`, `PingResponse` TypeScript types.
 
@@ -655,7 +655,7 @@ Expected: `health.ts` (or similarly named generated file) exists and exports `He
 
 Add to `.gitignore`:
 ```
-libs/proto/generated
+libs/proto/src/generated
 ```
 ```bash
 git add libs/proto/src package.json package-lock.json .gitignore
@@ -1093,9 +1093,9 @@ message VerifyTokenResponse {
 ```bash
 rm libs/proto/src/health.proto
 npm run proto:gen
-ls libs/proto/generated
+ls libs/proto/src/generated
 ```
-Expected: `auth.ts` present, exporting `AuthServiceClient`, `VerifyTokenRequest`, `VerifyTokenResponse`, `Principal`; `health.ts` no longer regenerated (delete the stale file if it lingers: `rm -f libs/proto/generated/health.ts`).
+Expected: `auth.ts` present, exporting `AuthServiceClient`, `VerifyTokenRequest`, `VerifyTokenResponse`, `Principal`; `health.ts` no longer regenerated (delete the stale file if it lingers: `rm -f libs/proto/src/generated/health.ts`).
 
 - [ ] **Step 3: Commit**
 
@@ -1826,7 +1826,7 @@ message SearchResponse {
 
 ```bash
 npm run proto:gen
-ls libs/proto/generated
+ls libs/proto/src/generated
 ```
 Expected: `rag.ts` present, exporting `RagServiceClient`, `SearchRequest`, `SearchResponse`, `Chunk`.
 
@@ -2707,7 +2707,7 @@ message AskResponse {
 
 ```bash
 npm run proto:gen
-ls libs/proto/generated
+ls libs/proto/src/generated
 ```
 Expected: `chat.ts` present, importing `Chunk` from the generated `rag.ts`.
 
@@ -4259,7 +4259,7 @@ message SynthesizeResponse {
 
 ```bash
 npm run proto:gen
-ls libs/proto/generated
+ls libs/proto/src/generated
 ```
 Expected: `speech.ts` present.
 
