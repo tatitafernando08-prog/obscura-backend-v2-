@@ -1,0 +1,42 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": false,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2022",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "strictBindCallApply": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@app/proto": ["libs/proto/src"],
+      "@app/proto/*": ["libs/proto/src/*"],
+      "@app/common": ["libs/common/src"],
+      "@app/common/*": ["libs/common/src/*"],
+      "@app/database": ["libs/database/src"],
+      "@app/database/*": ["libs/database/src/*"],
+      "@app/auth-service": ["libs/auth-service/src"],
+      "@app/auth-service/*": ["libs/auth-service/src/*"],
+      "@app/rag-service": ["libs/rag-service/src"],
+      "@app/rag-service/*": ["libs/rag-service/src/*"],
+      "@app/chat-service": ["libs/chat-service/src"],
+      "@app/chat-service/*": ["libs/chat-service/src/*"],
+      "@app/speech-service": ["libs/speech-service/src"],
+      "@app/speech-service/*": ["libs/speech-service/src/*"],
+      "@app/ingestion-service": ["libs/ingestion-service/src"],
+      "@app/ingestion-service/*": ["libs/ingestion-service/src/*"],
+      "@app/gateway": ["libs/gateway/src"],
+      "@app/gateway/*": ["libs/gateway/src/*"]
+    }
+  }
+}
