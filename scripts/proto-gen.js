@@ -24,6 +24,12 @@ if (protoFiles.length === 0) {
   process.exit(0);
 }
 
+// IMPORTANT: grpc-tools must stay pinned at exactly 1.9.1 (see package.json) on Windows.
+// 1.10+ ships a debug build of protoc.exe that requires ucrtbased.dll (the Debug Universal
+// C Runtime), which is not present outside a full Visual Studio debug-tools install and
+// fails with "error while loading shared libraries: ucrtbased.dll: cannot open shared
+// object file". Do not bump grpc-tools past 1.9.1 without re-verifying protoc.exe still
+// runs standalone on a plain Windows dev machine.
 const protocBin = process.platform === 'win32' ? 'protoc.exe' : 'protoc';
 const protocPath = path.join(rootDir, 'node_modules', 'grpc-tools', 'bin', protocBin);
 
