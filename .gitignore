@@ -4,3 +4,4 @@ node_modules
 dist
 secrets/
 .superpowers/
+libs/proto/src/generated
