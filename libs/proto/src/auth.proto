@@ -1,0 +1,25 @@
+syntax = "proto3";
+package auth;
+
+service AuthService {
+  rpc VerifyToken (VerifyTokenRequest) returns (VerifyTokenResponse);
+}
+
+message VerifyTokenRequest {
+  string token = 1;
+}
+
+message Principal {
+  string type = 1; // "student" | "admin"
+  string id = 2;
+  string role = 3; // "student" | "admin"
+}
+// Device identity is a separate concept, not a Principal — see Task 42's
+// VerifyDeviceKey RPC and Task 43's DeviceAuthGuard, which attach a distinct
+// {deviceId, ownerStudentId} shape to the request instead of a Principal.
+
+message VerifyTokenResponse {
+  bool valid = 1;
+  Principal principal = 2;
+  string error = 3;
+}
