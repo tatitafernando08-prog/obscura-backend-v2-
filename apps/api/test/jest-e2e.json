@@ -6,6 +6,7 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
+  "transformIgnorePatterns": ["node_modules/(?!(jose)/)"],
   "moduleNameMapper": {
     "^@app/proto/(.*)$": "<rootDir>/../../../libs/proto/src/$1",
     "^@app/proto$": "<rootDir>/../../../libs/proto/src",

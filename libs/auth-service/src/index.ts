@@ -1,1 +1,2 @@
-export * from './jwt-verifier.service';
+export * from './auth-service.module';
+export * from './auth.service';
