@@ -14,7 +14,7 @@ export const authClientProvider: Provider = {
       transport: Transport.GRPC,
       options: {
         package: 'auth',
-        protoPath: join(__dirname, '../../../../libs/proto/src/auth.proto'),
+        protoPath: join(process.cwd(), 'libs/proto/src/auth.proto'),
         url: config.get('AUTH_GRPC_URL', { infer: true }),
       },
     }) as unknown as ClientGrpc;
