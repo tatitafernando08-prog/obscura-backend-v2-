@@ -1,0 +1,30 @@
+syntax = "proto3";
+package rag;
+
+service RagService {
+  rpc Search (SearchRequest) returns (SearchResponse);
+}
+
+message SearchRequest {
+  string query = 1;
+  string subject = 2;   // optional filter, empty string = no filter
+  string syllabus = 3;
+  string level = 4;
+  string medium = 5;
+  int32 top_k = 6;      // default 5 if 0
+}
+
+message Chunk {
+  string chunk_id = 1;
+  string paper_id = 2;
+  string content = 3;
+  string subject = 4;
+  int32 year = 5;
+  string question_number = 6;
+  int32 page = 7;
+  double relevance_score = 8;
+}
+
+message SearchResponse {
+  repeated Chunk chunks = 1;
+}
