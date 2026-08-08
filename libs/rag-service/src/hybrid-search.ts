@@ -21,6 +21,7 @@ export interface CandidateChunk {
 }
 
 const CANDIDATES_PER_LIST = 30;
+const FUSED_CANDIDATES_LIMIT = 20;
 
 @Injectable()
 export class HybridSearchService {
@@ -35,7 +36,7 @@ export class HybridSearchService {
       this.fullTextSearch(query, filters),
     ]);
 
-    return rrf([vectorList, ftsList], (c) => c.chunkId);
+    return rrf([vectorList, ftsList], (c) => c.chunkId).slice(0, FUSED_CANDIDATES_LIMIT);
   }
 
   private filterClause(filters: Filters, startParam: number): { clause: string; params: unknown[] } {

@@ -59,4 +59,9 @@ describe('HybridSearchService (integration, real dev DB)', () => {
     const noneMatch = await service.retrieveCandidates('law of demand', { subject: 'Physics' });
     expect(noneMatch).toHaveLength(0);
   }, 30000);
+
+  it('caps fused results to top ~20 candidates per Task 20 interface contract', async () => {
+    const candidates = await service.retrieveCandidates('law of demand', {});
+    expect(candidates.length).toBeLessThanOrEqual(20);
+  }, 30000);
 });
