@@ -1,0 +1,31 @@
+syntax = "proto3";
+package chat;
+
+import "rag.proto";
+
+service ChatLlmService {
+  rpc Ask (AskRequest) returns (AskResponse);
+}
+
+message HistoryTurn {
+  string role = 1;    // "user" | "assistant"
+  string content = 2;
+}
+
+message AskRequest {
+  string question_text = 1;
+  string medium = 2;       // "english" | "sinhala" | "tamil"
+  repeated HistoryTurn history = 3;   // last 6 turns, oldest first
+  repeated rag.Chunk retrieved_chunks = 4;
+}
+
+message SourceCitation {
+  string subject = 1;
+  string year = 2;
+}
+
+message AskResponse {
+  string answer = 1;
+  repeated SourceCitation sources = 2;
+  bool grounded = 3;
+}
