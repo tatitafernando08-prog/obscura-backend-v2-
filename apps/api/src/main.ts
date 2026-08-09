@@ -20,6 +20,21 @@ async function bootstrap() {
     },
   });
 
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.GRPC,
+    options: {
+      package: 'rag',
+      protoPath: join(process.cwd(), 'libs/proto/src/rag.proto'),
+      url: config.get('RAG_GRPC_URL', { infer: true }),
+      // proto3 omits empty repeated fields on the wire, and @grpc/proto-loader
+      // defaults to leaving them `undefined` on decode rather than `[]`.
+      // `arrays: true` restores `[]` for a no-match Search response so
+      // downstream consumers (Task 27's grounding check) can rely on
+      // `response.chunks` always being an array.
+      loader: { arrays: true },
+    },
+  });
+
   app.use(helmet());
   app.enableCors({ origin: true, credentials: true }); // TODO: restrict to real web-client origin once §1's website client exists
   app.useGlobalInterceptors(new RequestIdInterceptor());
