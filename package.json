@@ -19,7 +19,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./apps/api/test/jest-e2e.json",
     "proto:gen": "node scripts/proto-gen.js",
-    "seed:papers": "ts-node -r tsconfig-paths/register scripts/seed-papers.ts"
+    "seed:papers": "ts-node -r tsconfig-paths/register scripts/seed-papers.ts",
+    "validate:sinhala": "ts-node -r tsconfig-paths/register scripts/validate-sinhala-retrieval.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

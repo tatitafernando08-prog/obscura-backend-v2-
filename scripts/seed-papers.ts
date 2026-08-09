@@ -47,6 +47,19 @@ const SEED_PAPERS: Array<{
       'Question 2: Differentiate y = x^3 + 2x with respect to x. dy/dx = 3x^2 + 2.',
     ],
   },
+  {
+    subject: 'Economics',
+    year: 2022,
+    syllabus: 'local',
+    level: 'al',
+    medium: 'sinhala',
+    chunks: [
+      'ප්‍රශ්නය 1: ඉල්ලුමේ නියමය පවසන්න. මිල ඉහළ යන විට, අනෙකුත් සාධක නියතව පවතින විට, ඉල්ලුම් කරන ප්‍රමාණය අඩු වේ.',
+      'ප්‍රශ්නය 2: මිල ඉල්ලුම් ප්‍රත්‍යාස්ථතාව යනු කුමක්ද? මිල වෙනසකට ප්‍රතිචාර වශයෙන් ඉල්ලුම් කරන ප්‍රමාණයේ වෙනස මැනීමකි.',
+      'ප්‍රශ්නය 3: සැපයුමේ නියමය පවසන්න. මිල ඉහළ යන විට, අනෙකුත් සාධක නියතව පවතින විට, සැපයුම් කරන ප්‍රමාණය ඉහළ යයි.',
+      'ප්‍රශ්නය 4: වෙළඳපොල සමතුලිතතාවය යනු කුමක්ද? ඉල්ලුම් ප්‍රමාණය සහ සැපයුම් ප්‍රමාණය සමාන වන ලක්ෂ්‍යයයි.',
+    ],
+  },
 ];
 
 @Module({ imports: [AppConfigModule, DatabaseModule] })
@@ -61,7 +74,14 @@ async function main() {
     const [{ id: paperId }] = await db.query<{ id: string }>(
       `insert into papers (subject, year, syllabus, level, medium, storage_path, status)
        values ($1, $2, $3, $4, $5, $6, 'ready') returning id`,
-      [paper.subject, paper.year, paper.syllabus, paper.level, paper.medium, `seed/${paper.subject}-${paper.year}.pdf`],
+      [
+        paper.subject,
+        paper.year,
+        paper.syllabus,
+        paper.level,
+        paper.medium,
+        `seed/${paper.subject}-${paper.year}.pdf`,
+      ],
     );
 
     for (const [index, content] of paper.chunks.entries()) {
@@ -72,7 +92,9 @@ async function main() {
         [paperId, index, content, `[${embedding.join(',')}]`],
       );
     }
-    console.log(`Seeded ${paper.subject} ${paper.year} (${paper.medium}): ${paper.chunks.length} chunks`);
+    console.log(
+      `Seeded ${paper.subject} ${paper.year} (${paper.medium}): ${paper.chunks.length} chunks`,
+    );
   }
 
   await app.close();
