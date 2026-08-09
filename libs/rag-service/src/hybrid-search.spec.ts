@@ -55,9 +55,11 @@ describe('HybridSearchService (integration, real dev DB)', () => {
   it('applies subject filtering', async () => {
     const candidates = await service.retrieveCandidates('law of demand', { subject: 'Economics' });
     expect(candidates.every((c) => c.subject === 'Economics')).toBe(true);
+    expect(candidates.some((c) => chunkIds.includes(c.chunkId))).toBe(true);
 
-    const noneMatch = await service.retrieveCandidates('law of demand', { subject: 'Physics' });
-    expect(noneMatch).toHaveLength(0);
+    const physicsOnly = await service.retrieveCandidates('law of demand', { subject: 'Physics' });
+    expect(physicsOnly.every((c) => c.subject === 'Physics')).toBe(true);
+    expect(physicsOnly.some((c) => chunkIds.includes(c.chunkId))).toBe(false);
   }, 30000);
 
   it('caps fused results to top ~20 candidates per Task 20 interface contract', async () => {
