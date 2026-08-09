@@ -66,4 +66,17 @@ describe('ChatLlmAskService', () => {
     expect(result.grounded).toBe(true);
     expect(result.sources).toEqual([{ subject: 'Economics', year: '2022' }]);
   });
+
+  it('retries when curriculum question cites a non-existent chunk index', async () => {
+    generate
+      .mockResolvedValueOnce({ answer: 'hallucinated answer with fake citation', isCurriculumQuestion: true, citedIndices: [99] })
+      .mockResolvedValueOnce({ answer: "I don't have that information.", isCurriculumQuestion: true, citedIndices: [] });
+
+    const result = await service.ask({ questionText: 'q', medium: 'english', history: [], chunks });
+
+    expect(generate).toHaveBeenCalledTimes(2);
+    expect(result.answer).toMatch(/don't have that/i);
+    expect(result.sources).toEqual([]);
+    expect(result.grounded).toBe(false);
+  });
 });

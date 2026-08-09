@@ -26,12 +26,14 @@ export class ChatLlmAskService {
 
   async ask(input: AskInput): Promise<AskResult> {
     const first = await this.attempt(input, false);
-    if (this.isGrounded(first)) {
-      return this.toResult(first, input.chunks);
+    const firstSources = this.resolveSources(first.citedIndices, input.chunks);
+    if (this.isGrounded(first, firstSources)) {
+      return this.toResult(first, firstSources);
     }
 
     const retry = await this.attempt(input, true);
-    return this.toResult(retry, input.chunks);
+    const retrySources = this.resolveSources(retry.citedIndices, input.chunks);
+    return this.toResult(retry, retrySources);
   }
 
   private async attempt(input: AskInput, strict: boolean) {
@@ -39,24 +41,26 @@ export class ChatLlmAskService {
     return this.gemini.generate(prompt);
   }
 
-  private isGrounded(result: { isCurriculumQuestion: boolean; citedIndices: number[] }): boolean {
-    // Small talk never needs grounding. Curriculum questions need at least one citation.
-    return !result.isCurriculumQuestion || result.citedIndices.length > 0;
-  }
-
-  private toResult(
-    result: { answer: string; isCurriculumQuestion: boolean; citedIndices: number[] },
-    chunks: PromptChunk[],
-  ): AskResult {
-    const sources = result.citedIndices
+  private resolveSources(citedIndices: number[], chunks: PromptChunk[]): SourceCitation[] {
+    return citedIndices
       .map((i) => chunks.find((c) => c.index === i))
       .filter((c): c is PromptChunk => Boolean(c))
       .map((c) => ({ subject: c.subject, year: String(c.year) }));
+  }
 
+  private isGrounded(result: { isCurriculumQuestion: boolean }, sources: SourceCitation[]): boolean {
+    // Small talk never needs grounding. Curriculum questions need at least one RESOLVED source.
+    return !result.isCurriculumQuestion || sources.length > 0;
+  }
+
+  private toResult(
+    result: { answer: string; isCurriculumQuestion: boolean },
+    sources: SourceCitation[],
+  ): AskResult {
     return {
       answer: result.answer,
       sources,
-      grounded: this.isGrounded(result),
+      grounded: this.isGrounded(result, sources),
     };
   }
 }
