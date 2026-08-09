@@ -18,7 +18,8 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./apps/api/test/jest-e2e.json",
-    "proto:gen": "node scripts/proto-gen.js"
+    "proto:gen": "node scripts/proto-gen.js",
+    "seed:papers": "ts-node -r tsconfig-paths/register scripts/seed-papers.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -51,6 +52,7 @@
     "@types/supertest": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^8.64.0",
     "@typescript-eslint/parser": "^8.64.0",
+    "dotenv": "^17.4.2",
     "dotenv-cli": "^11.0.0",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^9.1.2",
@@ -63,7 +65,7 @@
     "supertest": "^7.0.0",
     "ts-jest": "^29.1.0",
     "ts-loader": "^9.4.3",
-    "ts-node": "^10.9.1",
+    "ts-node": "^10.9.2",
     "ts-proto": "^2.12.0",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.1.3"
