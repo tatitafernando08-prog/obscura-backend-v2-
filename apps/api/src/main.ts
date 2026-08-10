@@ -35,6 +35,19 @@ async function bootstrap() {
     },
   });
 
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.GRPC,
+    options: {
+      package: 'chat',
+      protoPath: join(process.cwd(), 'libs/proto/src/chat.proto'),
+      url: config.get('CHAT_GRPC_URL', { infer: true }),
+      // chat.proto imports rag.proto, so proto-loader needs includeDirs to
+      // resolve that import. Also needs arrays:true (see rag block above)
+      // since AskRequest/AskResponse both have repeated fields.
+      loader: { arrays: true, includeDirs: [join(process.cwd(), 'libs/proto/src')] },
+    },
+  });
+
   app.use(helmet());
   app.enableCors({ origin: true, credentials: true }); // TODO: restrict to real web-client origin once §1's website client exists
   app.useGlobalInterceptors(new RequestIdInterceptor());

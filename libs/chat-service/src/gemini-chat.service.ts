@@ -18,7 +18,11 @@ export class GeminiChatService {
   }
 
   async generate(prompt: string): Promise<GeminiStructuredResult> {
-    const model = this.client.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    // 'gemini-2.5-flash' returns 404 "no longer available to new users" as of
+    // the current API key's cohort; 'gemini-flash-latest' is Google's rolling
+    // alias for the current-generation flash model and avoids this class of
+    // breakage going forward.
+    const model = this.client.getGenerativeModel({ model: 'gemini-flash-latest' });
     const result = await model.generateContent(prompt);
     const raw = result.response.text().trim();
     const jsonText = raw.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
