@@ -4,6 +4,7 @@ import { RAG_GRPC_CLIENT } from '../grpc-clients/rag-client.provider';
 import { CHAT_GRPC_CLIENT } from '../grpc-clients/chat-client.provider';
 import { RagServiceClient } from '@app/proto/generated/rag';
 import { ChatLlmServiceClient } from '@app/proto/generated/chat';
+import { ChatSessionsRepository } from '@app/database';
 
 export interface GatewayAskInput {
   questionText: string;
@@ -12,6 +13,7 @@ export interface GatewayAskInput {
   level?: string;
   medium: string;
   history: { role: string; content: string }[];
+  sessionId: string;
 }
 
 export interface GatewayAskResult {
@@ -24,6 +26,7 @@ export class GatewayAskService {
   constructor(
     @Inject(RAG_GRPC_CLIENT) private readonly ragClient: RagServiceClient,
     @Inject(CHAT_GRPC_CLIENT) private readonly chatClient: ChatLlmServiceClient,
+    private readonly chatSessions: ChatSessionsRepository,
   ) {}
 
   async ask(input: GatewayAskInput): Promise<GatewayAskResult> {
@@ -46,6 +49,9 @@ export class GatewayAskService {
         retrievedChunks: searchResult.chunks,
       }),
     );
+
+    await this.chatSessions.appendMessage(input.sessionId, 'user', input.questionText);
+    await this.chatSessions.appendMessage(input.sessionId, 'assistant', askResult.answer, askResult.sources);
 
     return { answer: askResult.answer, sources: askResult.sources };
   }
