@@ -4,3 +4,6 @@ export * from './grpc-clients/rag-client.provider';
 export * from './grpc-clients/chat-client.provider';
 export * from './interceptors/request-id.interceptor';
 export * from './ask/ask.service';
+export * from './chat/chat.controller';
+export * from './chat/dto/chat-ask.dto';
+export * from './gateway.module';
