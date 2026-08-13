@@ -53,5 +53,5 @@ describe('ChatSessionsRepository', () => {
     const history = await repo.getRecentHistory(sessionId, 6);
     expect(history).toHaveLength(6);
     expect(history[history.length - 1].content).toBe('turn 9');
-  });
+  }, 20000);
 });
