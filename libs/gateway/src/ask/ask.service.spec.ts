@@ -59,4 +59,21 @@ describe('GatewayAskService', () => {
     expect(result.sources).toEqual([]);
     expect(appendMessage).toHaveBeenCalledTimes(2);
   });
+
+  it('persists conversation with device sessionId, proving transport-agnostic persistence', async () => {
+    search.mockReturnValue(of({ chunks: [] }));
+    ask.mockReturnValue(of({ answer: 'Hello from device!', sources: [], grounded: true }));
+
+    const result = await service.ask({
+      questionText: 'hi',
+      medium: 'english',
+      history: [],
+      sessionId: 'device-session-abc',
+    });
+
+    expect(appendMessage).toHaveBeenCalledTimes(2);
+    expect(appendMessage).toHaveBeenNthCalledWith(1, 'device-session-abc', 'user', 'hi');
+    expect(appendMessage).toHaveBeenNthCalledWith(2, 'device-session-abc', 'assistant', 'Hello from device!', []);
+    expect(result.answer).toEqual('Hello from device!');
+  });
 });
