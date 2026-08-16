@@ -1,7 +1,7 @@
 import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import { AuthService } from './auth.service';
-import { VerifyTokenRequest, VerifyTokenResponse } from '@app/proto/generated/auth';
+import { VerifyTokenRequest, VerifyTokenResponse, VerifyDeviceKeyRequest, VerifyDeviceKeyResponse } from '@app/proto/generated/auth';
 
 @Controller()
 export class AuthController {
@@ -14,5 +14,14 @@ export class AuthController {
       return { valid: false, principal: undefined, error: 'invalid_or_expired_token' };
     }
     return { valid: true, principal, error: '' };
+  }
+
+  @GrpcMethod('AuthService', 'VerifyDeviceKey')
+  async verifyDeviceKey(request: VerifyDeviceKeyRequest): Promise<VerifyDeviceKeyResponse> {
+    const match = await this.authService.resolveDevicePrincipal(request.key);
+    if (!match) {
+      return { valid: false, deviceId: '', ownerStudentId: '', error: 'invalid_or_revoked_key' };
+    }
+    return { valid: true, deviceId: match.deviceId, ownerStudentId: match.ownerStudentId ?? '', error: '' };
   }
 }

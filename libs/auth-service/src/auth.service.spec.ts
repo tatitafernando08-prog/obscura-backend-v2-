@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { JwtVerifierService } from './jwt-verifier.service';
 import { StudentsRepository } from '@app/database';
+import { DeviceKeyService } from './device-key.service';
 
 jest.mock('jwks-rsa', () => ({
   JwksClient: jest.fn().mockImplementation(() => ({
@@ -13,6 +14,7 @@ describe('AuthService', () => {
   let service: AuthService;
   const verify = jest.fn();
   const findById = jest.fn();
+  const verifyKey = jest.fn();
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -20,6 +22,7 @@ describe('AuthService', () => {
         AuthService,
         { provide: JwtVerifierService, useValue: { verify } },
         { provide: StudentsRepository, useValue: { findById } },
+        { provide: DeviceKeyService, useValue: { verifyKey } },
       ],
     }).compile();
     service = moduleRef.get(AuthService);
@@ -52,5 +55,17 @@ describe('AuthService', () => {
     findById.mockResolvedValue({ id: 'user-2', role: 'admin' });
     const result = await service.resolvePrincipal('valid-token');
     expect(result).toEqual({ type: 'admin', id: 'user-2', role: 'admin' });
+  });
+
+  it('returns null when the device key is invalid', async () => {
+    verifyKey.mockResolvedValue(null);
+    const result = await service.resolveDevicePrincipal('invalid-key');
+    expect(result).toBeNull();
+  });
+
+  it('resolves a device principal for a valid key', async () => {
+    verifyKey.mockResolvedValue({ deviceId: 'device-1', ownerStudentId: 'user-1' });
+    const result = await service.resolveDevicePrincipal('valid-key');
+    expect(result).toEqual({ deviceId: 'device-1', ownerStudentId: 'user-1' });
   });
 });
