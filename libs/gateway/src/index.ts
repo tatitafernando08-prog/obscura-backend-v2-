@@ -7,4 +7,6 @@ export * from './interceptors/request-id.interceptor';
 export * from './ask/ask.service';
 export * from './chat/chat.controller';
 export * from './chat/dto/chat-ask.dto';
+export * from './admin/devices.controller';
+export * from './admin/guards/admin.guard';
 export * from './gateway.module';
