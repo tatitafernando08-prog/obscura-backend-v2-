@@ -1,4 +1,4 @@
-import { Module, OnModuleInit } from '@nestjs/common';
+import { Module, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Worker } from 'bullmq';
 import { EnvConfig } from '@app/common';
@@ -11,8 +11,8 @@ import { INGESTION_QUEUE_NAME } from './queue/ingestion-job.types';
   providers: [IngestionProcessor],
   exports: [IngestionProcessor],
 })
-export class IngestionServiceModule implements OnModuleInit {
-  private worker: Worker;
+export class IngestionServiceModule implements OnModuleInit, OnModuleDestroy {
+  private worker: Worker | null = null;
 
   constructor(private readonly processor: IngestionProcessor, private readonly config: ConfigService<EnvConfig, true>) {}
 
@@ -22,5 +22,11 @@ export class IngestionServiceModule implements OnModuleInit {
       (job) => this.processor.process(job),
       { connection: { url: this.config.get('REDIS_URL', { infer: true }) } as any },
     );
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    if (this.worker) {
+      await this.worker.close();
+    }
   }
 }

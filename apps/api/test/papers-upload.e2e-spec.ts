@@ -94,31 +94,43 @@ describe('POST /papers/upload (e2e)', () => {
     const token = process.env.TEST_STUDENT_JWT!; // same fixture, promoted to admin below
     await db.query(`update students set role = 'admin' where id = $1`, [studentId]);
 
-    const res = await request(app.getHttpServer())
-      .post('/papers/upload')
-      .set('Authorization', `Bearer ${token}`)
-      .field('subject', 'Economics')
-      .field('year', '2023')
-      .field('syllabus', 'local')
-      .field('level', 'al')
-      .field('medium', 'english')
-      .attach('file', TINY_PDF, { filename: 'paper.pdf', contentType: 'application/pdf' })
-      .expect(201);
+    // Pause the ingestion queue for the duration of this test to prevent the live Worker
+    // from consuming the job while we assert it's still in the queue. The queue is shared
+    // with production, so we MUST guarantee it gets resumed even if an assertion fails.
+    await inspectQueue.pause();
+    try {
+      const res = await request(app.getHttpServer())
+        .post('/papers/upload')
+        .set('Authorization', `Bearer ${token}`)
+        .field('subject', 'Economics')
+        .field('year', '2023')
+        .field('syllabus', 'local')
+        .field('level', 'al')
+        .field('medium', 'english')
+        .attach('file', TINY_PDF, { filename: 'paper.pdf', contentType: 'application/pdf' })
+        .expect(201);
 
-    expect(res.body).toEqual({ paper_id: expect.any(String), status: 'processing' });
-    createdPaperIds.push(res.body.paper_id);
+      expect(res.body).toEqual({ paper_id: expect.any(String), status: 'processing' });
+      createdPaperIds.push(res.body.paper_id);
 
-    const rows = await db.query<{ status: string; subject: string; storage_path: string; uploaded_by: string }>(
-      `select status, subject, storage_path, uploaded_by from papers where id = $1`,
-      [res.body.paper_id],
-    );
-    expect(rows).toHaveLength(1);
-    expect(rows[0].status).toBe('processing');
-    expect(rows[0].subject).toBe('Economics');
-    expect(rows[0].uploaded_by).toBe(studentId);
+      const rows = await db.query<{ status: string; subject: string; storage_path: string; uploaded_by: string }>(
+        `select status, subject, storage_path, uploaded_by from papers where id = $1`,
+        [res.body.paper_id],
+      );
+      expect(rows).toHaveLength(1);
+      expect(rows[0].status).toBe('processing');
+      expect(rows[0].subject).toBe('Economics');
+      expect(rows[0].uploaded_by).toBe(studentId);
 
-    const waiting = await inspectQueue.getWaiting();
-    expect(waiting.some((j) => j.data.paperId === res.body.paper_id)).toBe(true);
+      const waiting = await inspectQueue.getWaiting();
+      expect(waiting.some((j) => j.data.paperId === res.body.paper_id)).toBe(true);
+    } finally {
+      await inspectQueue.resume();
+    }
+
+    // Verify the queue is NOT paused after the test (even on a forced failure path).
+    const queueState = await inspectQueue.isPaused();
+    expect(queueState).toBe(false);
   });
 
   it('rejects a non-PDF file with 400', async () => {
