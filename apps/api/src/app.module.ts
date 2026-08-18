@@ -7,6 +7,7 @@ import { AuthServiceModule } from '@app/auth-service';
 import { RagServiceModule } from '@app/rag-service';
 import { ChatServiceModule } from '@app/chat-service';
 import { GatewayModule } from '@app/gateway';
+import { IngestionServiceModule } from '@app/ingestion-service';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { GatewayModule } from '@app/gateway';
     RagServiceModule,
     ChatServiceModule,
     GatewayModule,
+    IngestionServiceModule,
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]), // 60 req/min/IP default; tuned per-route from Task 31 onward
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
