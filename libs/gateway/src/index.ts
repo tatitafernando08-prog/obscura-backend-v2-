@@ -8,5 +8,7 @@ export * from './ask/ask.service';
 export * from './chat/chat.controller';
 export * from './chat/dto/chat-ask.dto';
 export * from './admin/devices.controller';
+export * from './admin/papers-upload.controller';
+export * from './admin/dto/upload-paper.dto';
 export * from './admin/guards/admin.guard';
 export * from './gateway.module';

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ChatController } from './chat/chat.controller';
 import { AdminDevicesController } from './admin/devices.controller';
+import { PapersUploadController } from './admin/papers-upload.controller';
 import { GatewayAskService } from './ask/ask.service';
 import { AuthGuard } from './guards/auth.guard';
 import { AdminGuard } from './admin/guards/admin.guard';
@@ -8,6 +9,7 @@ import { authClientProvider } from './grpc-clients/auth-client.provider';
 import { ragClientProvider } from './grpc-clients/rag-client.provider';
 import { chatClientProvider } from './grpc-clients/chat-client.provider';
 import { DeviceKeyService } from '@app/auth-service';
+import { IngestionQueueModule } from '@app/ingestion-service';
 
 /**
  * Bundles the HTTP-facing gateway surface: controllers, the gRPC client
@@ -19,7 +21,8 @@ import { DeviceKeyService } from '@app/auth-service';
  * is `@Global()` — it does not need to be re-declared here.
  */
 @Module({
-  controllers: [ChatController, AdminDevicesController],
+  imports: [IngestionQueueModule],
+  controllers: [ChatController, AdminDevicesController, PapersUploadController],
   providers: [
     GatewayAskService,
     AuthGuard,
