@@ -130,4 +130,22 @@ describe('POST /papers/upload (e2e)', () => {
       .attach('file', Buffer.from('not a pdf'), { filename: 'notes.txt', contentType: 'text/plain' })
       .expect(400);
   });
+
+  it("rejects a file over the 25MB limit with 400, via multer's stream-level cap (not a 500/hang)", async () => {
+    const token = process.env.TEST_STUDENT_JWT!; // fixture is still admin from the previous test
+    // One byte over the controller's MAX_SIZE_BYTES (25 * 1024 * 1024). This
+    // exercises FileInterceptor's `limits.fileSize` (multer aborts the
+    // upload stream before it's ever fully buffered), not the controller
+    // body's post-buffering `file.size` backstop check.
+    const oversized = Buffer.alloc(25 * 1024 * 1024 + 1, 0x61);
+
+    const res = await request(app.getHttpServer())
+      .post('/papers/upload')
+      .set('Authorization', `Bearer ${token}`)
+      .field('subject', 'Economics')
+      .attach('file', oversized, { filename: 'huge.pdf', contentType: 'application/pdf' })
+      .expect(400);
+
+    expect(res.body).toMatchObject({ statusCode: 400, error: 'Bad Request' });
+  }, 30_000);
 });
