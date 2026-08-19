@@ -11,4 +11,6 @@ export * from './admin/devices.controller';
 export * from './admin/papers-upload.controller';
 export * from './admin/dto/upload-paper.dto';
 export * from './admin/guards/admin.guard';
+export * from './realtime/realtime.gateway';
+export * from './realtime/realtime.module';
 export * from './gateway.module';

@@ -5,6 +5,12 @@ import { Job } from 'bullmq';
 // doesn't exist on the module and throw "is not a function" at call time.
 import pdfParse = require('pdf-parse');
 import { DatabaseService, StorageService } from '@app/database';
+// Deep import (not the `@app/gateway` barrel) so this file never triggers
+// `gateway.module.ts`, which imports `IngestionQueueModule` from this lib's
+// own barrel — going through `@app/gateway`'s index here would create a
+// circular require between the two libs' index.ts files. See
+// `realtime.module.ts` for the full explanation.
+import { RealtimeGateway } from '@app/gateway/realtime/realtime.gateway';
 import { IngestionJobPayload } from './queue/ingestion-job.types';
 import { GeminiExtractor, ExtractedChunk } from './extraction/gemini-extractor';
 import { chunkByFixedWindow } from './extraction/fallback-chunker';
@@ -19,6 +25,7 @@ export class IngestionProcessor {
     private readonly storage: StorageService,
     private readonly geminiExtractor: GeminiExtractor,
     private readonly chunkUpsert: ChunkUpsertService,
+    private readonly realtimeGateway: RealtimeGateway,
   ) {}
 
   async process(
@@ -43,6 +50,7 @@ export class IngestionProcessor {
       const chunkCount = await this.chunkUpsert.upsertChunks(paperId, chunks);
       this.logger.log(`Upserted ${chunkCount} chunks for paper ${paperId}`);
       await this.db.query(`update papers set status = 'ready' where id = $1`, [paperId]);
+      this.realtimeGateway.emitIngestionStatus({ paper_id: paperId, status: 'ready', chunk_count: chunkCount });
 
       return { status: 'ready', chunkCount };
     } catch (err) {
@@ -51,6 +59,8 @@ export class IngestionProcessor {
         paperId,
         (err as Error).message,
       ]);
+      this.realtimeGateway.emitIngestionStatus({ paper_id: paperId, status: 'failed' });
+
       return { status: 'failed' };
     }
   }

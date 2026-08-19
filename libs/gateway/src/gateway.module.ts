@@ -10,6 +10,7 @@ import { ragClientProvider } from './grpc-clients/rag-client.provider';
 import { chatClientProvider } from './grpc-clients/chat-client.provider';
 import { DeviceKeyService } from '@app/auth-service';
 import { IngestionQueueModule } from '@app/ingestion-service';
+import { RealtimeModule } from './realtime/realtime.module';
 
 /**
  * Bundles the HTTP-facing gateway surface: controllers, the gRPC client
@@ -21,7 +22,7 @@ import { IngestionQueueModule } from '@app/ingestion-service';
  * is `@Global()` — it does not need to be re-declared here.
  */
 @Module({
-  imports: [IngestionQueueModule],
+  imports: [IngestionQueueModule, RealtimeModule],
   controllers: [ChatController, AdminDevicesController, PapersUploadController],
   providers: [
     GatewayAskService,
