@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import pdfParse from 'pdf-parse';
+// pdf-parse uses `export =` (CommonJS) and this project's tsconfig doesn't set
+// esModuleInterop, so a default import would compile to a `.default` access that
+// doesn't exist on the module and throw "is not a function" at call time.
+import pdfParse = require('pdf-parse');
 import { DatabaseService, StorageService } from '@app/database';
 import { IngestionJobPayload } from './queue/ingestion-job.types';
 import { GeminiExtractor, ExtractedChunk } from './extraction/gemini-extractor';
@@ -18,7 +21,9 @@ export class IngestionProcessor {
     private readonly chunkUpsert: ChunkUpsertService,
   ) {}
 
-  async process(job: Job<IngestionJobPayload>): Promise<void> {
+  async process(
+    job: Job<IngestionJobPayload>,
+  ): Promise<{ status: 'ready' | 'failed'; chunkCount?: number }> {
     const { paperId } = job.data;
     try {
       const paper = await this.loadPaper(paperId);
@@ -35,14 +40,18 @@ export class IngestionProcessor {
         chunks = chunkByFixedWindow(parsed.text);
       }
 
-      const insertedCount = await this.chunkUpsert.upsertChunks(paperId, chunks);
-      this.logger.log(`Upserted ${insertedCount} chunks for paper ${paperId}`);
+      const chunkCount = await this.chunkUpsert.upsertChunks(paperId, chunks);
+      this.logger.log(`Upserted ${chunkCount} chunks for paper ${paperId}`);
+      await this.db.query(`update papers set status = 'ready' where id = $1`, [paperId]);
+
+      return { status: 'ready', chunkCount };
     } catch (err) {
       this.logger.error(`Ingestion failed for paper ${paperId}: ${(err as Error).message}`);
       await this.db.query(`update papers set status = 'failed', error_reason = $2 where id = $1`, [
         paperId,
         (err as Error).message,
       ]);
+      return { status: 'failed' };
     }
   }
 
