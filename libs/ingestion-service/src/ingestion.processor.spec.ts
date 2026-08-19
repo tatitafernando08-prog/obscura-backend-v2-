@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import { Queue } from 'bullmq';
 import { DatabaseService, DatabaseModule } from '@app/database';
 import { IngestionProcessor } from './ingestion.processor';
+import { GeminiExtractor } from './extraction/gemini-extractor';
 import { INGESTION_QUEUE_NAME } from './queue/ingestion-job.types';
 
 describe('IngestionProcessor (integration, real Redis + DB)', () => {
@@ -15,7 +16,7 @@ describe('IngestionProcessor (integration, real Redis + DB)', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule],
-      providers: [IngestionProcessor],
+      providers: [IngestionProcessor, GeminiExtractor],
     }).compile();
     db = moduleRef.get(DatabaseService);
     processor = moduleRef.get(IngestionProcessor);

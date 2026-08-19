@@ -5,10 +5,11 @@ import { EnvConfig } from '@app/common';
 import { IngestionProcessor } from './ingestion.processor';
 import { IngestionQueueModule } from './queue/ingestion-queue.module';
 import { INGESTION_QUEUE_NAME } from './queue/ingestion-job.types';
+import { GeminiExtractor } from './extraction/gemini-extractor';
 
 @Module({
   imports: [IngestionQueueModule],
-  providers: [IngestionProcessor],
+  providers: [IngestionProcessor, GeminiExtractor],
   exports: [IngestionProcessor],
 })
 export class IngestionServiceModule implements OnModuleInit, OnModuleDestroy {
