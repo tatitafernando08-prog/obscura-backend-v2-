@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
+import { Metadata } from '@grpc/grpc-js';
 import { RAG_GRPC_CLIENT } from '../grpc-clients/rag-client.provider';
 import { CHAT_GRPC_CLIENT } from '../grpc-clients/chat-client.provider';
 import { RagServiceClient } from '@app/proto/generated/rag';
@@ -14,6 +15,7 @@ export interface GatewayAskInput {
   medium: string;
   history: { role: string; content: string }[];
   sessionId: string;
+  requestId?: string;
 }
 
 export interface GatewayAskResult {
@@ -30,28 +32,47 @@ export class GatewayAskService {
   ) {}
 
   async ask(input: GatewayAskInput): Promise<GatewayAskResult> {
+    const metadata = new Metadata();
+    metadata.set('x-request-id', input.requestId ?? '');
+
     const searchResult = await firstValueFrom(
-      this.ragClient.search({
-        query: input.questionText,
-        subject: input.subject ?? '',
-        syllabus: input.syllabus ?? '',
-        level: input.level ?? '',
-        medium: input.medium,
-        topK: 5,
-      }),
+      this.ragClient.search(
+        {
+          query: input.questionText,
+          subject: input.subject ?? '',
+          syllabus: input.syllabus ?? '',
+          level: input.level ?? '',
+          medium: input.medium,
+          topK: 5,
+        },
+        metadata,
+      ),
     );
 
     const askResult = await firstValueFrom(
-      this.chatClient.ask({
-        questionText: input.questionText,
-        medium: input.medium,
-        history: input.history,
-        retrievedChunks: searchResult.chunks,
-      }),
+      this.chatClient.ask(
+        {
+          questionText: input.questionText,
+          medium: input.medium,
+          history: input.history,
+          retrievedChunks: searchResult.chunks,
+        },
+        metadata,
+      ),
     );
 
-    await this.chatSessions.appendMessage(input.sessionId, 'user', input.questionText);
-    await this.chatSessions.appendMessage(input.sessionId, 'assistant', askResult.answer, askResult.sources);
+    await this.chatSessions.appendMessage(
+      input.sessionId,
+      'user',
+      input.questionText,
+    );
+    await this.chatSessions.appendMessage(
+      input.sessionId,
+      'assistant',
+      askResult.answer,
+      askResult.sources,
+      askResult.grounded,
+    );
 
     return { answer: askResult.answer, sources: askResult.sources };
   }

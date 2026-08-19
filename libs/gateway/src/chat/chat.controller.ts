@@ -1,5 +1,13 @@
-import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { Request } from 'express';
 import { AuthGuard } from '../guards/auth.guard';
 import { GatewayAskService } from '../ask/ask.service';
 import { ChatSessionsRepository } from '@app/database';
@@ -16,7 +24,10 @@ export class ChatController {
   @HttpCode(200)
   @UseGuards(AuthGuard)
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
-  async ask(@Body() body: ChatAskDto) {
+  async ask(
+    @Body() body: ChatAskDto,
+    @Req() req: Request & { requestId?: string },
+  ) {
     // NOTE: `body.student_id` is trusted from the request body here to match the
     // *existing* wire contract exactly (the mobile client already sends it) — but
     // `AuthGuard` has already independently verified the caller's JWT and attached
@@ -25,7 +36,9 @@ export class ChatController {
     // step; it's deliberately left out of Phase 1 to keep this task's scope to
     // "make the existing contract work under real auth," and can be added later
     // without changing the wire contract.
-    const sessionId = await this.chatSessions.getOrCreateForStudent(body.student_id);
+    const sessionId = await this.chatSessions.getOrCreateForStudent(
+      body.student_id,
+    );
 
     const result = await this.askService.ask({
       questionText: body.question,
@@ -34,11 +47,14 @@ export class ChatController {
       medium: body.medium,
       history: (body.chat_history ?? []).slice(-6),
       sessionId,
+      requestId: req.requestId,
     });
 
     return {
       answer: result.answer,
-      sources: result.sources.map((s) => ({ past_papers: { subject: s.subject, year: s.year } })),
+      sources: result.sources.map((s) => ({
+        past_papers: { subject: s.subject, year: s.year },
+      })),
     };
   }
 }

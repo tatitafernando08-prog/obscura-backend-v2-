@@ -43,10 +43,17 @@ export class ChatSessionsRepository {
     role: 'user' | 'assistant',
     content: string,
     sources?: { subject: string; year: string }[],
+    grounded?: boolean,
   ): Promise<void> {
     await this.db.query(
-      `insert into chat_messages (session_id, role, content, sources) values ($1, $2, $3, $4)`,
-      [sessionId, role, content, sources ? JSON.stringify(sources) : null],
+      `insert into chat_messages (session_id, role, content, sources, grounded) values ($1, $2, $3, $4, $5)`,
+      [
+        sessionId,
+        role,
+        content,
+        sources ? JSON.stringify(sources) : null,
+        grounded ?? null,
+      ],
     );
   }
 

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ChatController } from './chat/chat.controller';
 import { AdminDevicesController } from './admin/devices.controller';
 import { PapersUploadController } from './admin/papers-upload.controller';
+import { MetricsController } from './admin/metrics.controller';
 import { PapersController } from './papers/papers.controller';
 import { GatewayAskService } from './ask/ask.service';
 import { AuthGuard } from './guards/auth.guard';
@@ -24,7 +25,13 @@ import { RealtimeModule } from './realtime/realtime.module';
  */
 @Module({
   imports: [IngestionQueueModule, RealtimeModule],
-  controllers: [ChatController, AdminDevicesController, PapersUploadController, PapersController],
+  controllers: [
+    ChatController,
+    AdminDevicesController,
+    PapersUploadController,
+    PapersController,
+    MetricsController,
+  ],
   providers: [
     GatewayAskService,
     AuthGuard,
