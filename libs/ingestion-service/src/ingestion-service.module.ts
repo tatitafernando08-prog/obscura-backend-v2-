@@ -6,10 +6,12 @@ import { IngestionProcessor } from './ingestion.processor';
 import { IngestionQueueModule } from './queue/ingestion-queue.module';
 import { INGESTION_QUEUE_NAME } from './queue/ingestion-job.types';
 import { GeminiExtractor } from './extraction/gemini-extractor';
+import { ChunkUpsertService } from './chunk-upsert.service';
+import { GeminiEmbeddingService } from '@app/rag-service';
 
 @Module({
   imports: [IngestionQueueModule],
-  providers: [IngestionProcessor, GeminiExtractor],
+  providers: [IngestionProcessor, GeminiExtractor, ChunkUpsertService, GeminiEmbeddingService],
   exports: [IngestionProcessor],
 })
 export class IngestionServiceModule implements OnModuleInit, OnModuleDestroy {

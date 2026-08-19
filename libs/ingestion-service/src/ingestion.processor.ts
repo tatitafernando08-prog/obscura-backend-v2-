@@ -5,6 +5,7 @@ import { DatabaseService, StorageService } from '@app/database';
 import { IngestionJobPayload } from './queue/ingestion-job.types';
 import { GeminiExtractor, ExtractedChunk } from './extraction/gemini-extractor';
 import { chunkByFixedWindow } from './extraction/fallback-chunker';
+import { ChunkUpsertService } from './chunk-upsert.service';
 
 @Injectable()
 export class IngestionProcessor {
@@ -14,6 +15,7 @@ export class IngestionProcessor {
     private readonly db: DatabaseService,
     private readonly storage: StorageService,
     private readonly geminiExtractor: GeminiExtractor,
+    private readonly chunkUpsert: ChunkUpsertService,
   ) {}
 
   async process(job: Job<IngestionJobPayload>): Promise<void> {
@@ -32,6 +34,9 @@ export class IngestionProcessor {
         const parsed = await pdfParse(pdfBuffer);
         chunks = chunkByFixedWindow(parsed.text);
       }
+
+      const insertedCount = await this.chunkUpsert.upsertChunks(paperId, chunks);
+      this.logger.log(`Upserted ${insertedCount} chunks for paper ${paperId}`);
     } catch (err) {
       this.logger.error(`Ingestion failed for paper ${paperId}: ${(err as Error).message}`);
       await this.db.query(`update papers set status = 'failed', error_reason = $2 where id = $1`, [
