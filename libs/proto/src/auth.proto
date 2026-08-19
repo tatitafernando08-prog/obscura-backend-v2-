@@ -3,7 +3,6 @@ package auth;
 
 service AuthService {
   rpc VerifyToken (VerifyTokenRequest) returns (VerifyTokenResponse);
-  rpc VerifyDeviceKey (VerifyDeviceKeyRequest) returns (VerifyDeviceKeyResponse);
 }
 
 message VerifyTokenRequest {
@@ -23,15 +22,4 @@ message VerifyTokenResponse {
   bool valid = 1;
   Principal principal = 2;
   string error = 3;
-}
-
-message VerifyDeviceKeyRequest {
-  string key = 1;
-}
-
-message VerifyDeviceKeyResponse {
-  bool valid = 1;
-  string device_id = 2;
-  string owner_student_id = 3;
-  string error = 4;
 }
