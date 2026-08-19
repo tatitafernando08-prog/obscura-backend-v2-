@@ -21,11 +21,25 @@ describe('IngestionQueueService (integration, real Redis)', () => {
     await inspectQueue.obliterate({ force: true });
     await inspectQueue.close();
     await service.onModuleDestroy();
-  });
+  }, 20000);
 
-  it('enqueues a job that becomes visible in the queue', async () => {
-    await service.enqueue({ paperId: 'paper-123' });
-    const waiting = await inspectQueue.getWaiting();
-    expect(waiting.some((j) => j.data.paperId === 'paper-123')).toBe(true);
-  });
+  it(
+    'enqueues a job that becomes visible in the queue',
+    async () => {
+      // Pause the shared live queue for the assertion window: this is the same real
+      // Upstash Redis instance a live IngestionServiceModule Worker (Task 56) may be
+      // consuming from in another running process, which would otherwise race this
+      // test's job into 'active'/'failed' before getWaiting() reads it back. Same
+      // pattern as apps/api/test/papers-upload.e2e-spec.ts — must always be resumed.
+      await inspectQueue.pause();
+      try {
+        await service.enqueue({ paperId: 'paper-123' });
+        const waiting = await inspectQueue.getWaiting();
+        expect(waiting.some((j) => j.data.paperId === 'paper-123')).toBe(true);
+      } finally {
+        await inspectQueue.resume();
+      }
+    },
+    20000,
+  );
 });
