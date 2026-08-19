@@ -50,7 +50,7 @@ export class IngestionProcessor {
       const chunkCount = await this.chunkUpsert.upsertChunks(paperId, chunks);
       this.logger.log(`Upserted ${chunkCount} chunks for paper ${paperId}`);
       await this.db.query(`update papers set status = 'ready' where id = $1`, [paperId]);
-      this.realtimeGateway.emitIngestionStatus({ paper_id: paperId, status: 'ready', chunk_count: chunkCount });
+      this.pushStatus({ paper_id: paperId, status: 'ready', chunk_count: chunkCount });
 
       return { status: 'ready', chunkCount };
     } catch (err) {
@@ -59,9 +59,29 @@ export class IngestionProcessor {
         paperId,
         (err as Error).message,
       ]);
-      this.realtimeGateway.emitIngestionStatus({ paper_id: paperId, status: 'failed' });
+      this.pushStatus({ paper_id: paperId, status: 'failed' });
 
       return { status: 'failed' };
+    }
+  }
+
+  /**
+   * Wraps `RealtimeGateway.emitIngestionStatus` so a WS push failure (e.g. a
+   * socket.io internal error) can never affect the paper's DB status or the
+   * BullMQ job's outcome. Without this isolation, a throwing emit on the
+   * success path would fall into `process()`'s outer `catch` and incorrectly
+   * overwrite an already-successful paper with `status = 'failed'`; on the
+   * failure path it would become an unhandled rejection even though the DB
+   * was already correctly written as `'failed'`. The DB write and `return`
+   * always happen regardless of whether this call throws.
+   */
+  private pushStatus(payload: { paper_id: string; status: string; chunk_count?: number }): void {
+    try {
+      this.realtimeGateway.emitIngestionStatus(payload);
+    } catch (emitErr) {
+      this.logger.error(
+        `Failed to emit paper:ingestion_status for paper ${payload.paper_id}: ${(emitErr as Error).message}`,
+      );
     }
   }
 
