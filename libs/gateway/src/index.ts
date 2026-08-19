@@ -1,4 +1,5 @@
 export * from './guards/auth.guard';
+export * from './guards/device-auth.guard';
 export * from './grpc-clients/auth-client.provider';
 export * from './grpc-clients/rag-client.provider';
 export * from './grpc-clients/chat-client.provider';
