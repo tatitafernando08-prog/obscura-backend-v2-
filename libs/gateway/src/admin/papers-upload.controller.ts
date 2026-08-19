@@ -18,7 +18,6 @@ import { Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import { AuthGuard } from '../guards/auth.guard';
-import { PerPrincipalThrottlerGuard } from '../guards/per-principal-throttler.guard';
 import { AdminGuard } from './guards/admin.guard';
 import { DatabaseService, StorageService } from '@app/database';
 import { IngestionQueueService } from '@app/ingestion-service';
@@ -58,8 +57,12 @@ export class PapersUploadController {
   ) {}
 
   @Post('upload')
-  @UseGuards(AuthGuard, AdminGuard, PerPrincipalThrottlerGuard)
-  @Throttle({ default: { limit: 20, ttl: 86_400_000 } }) // 20 uploads/24h per admin (SPEC-SHEET.md §16), keyed by principal id via PerPrincipalThrottlerGuard
+  // 20 uploads/24h per admin (SPEC-SHEET.md §16). Tracked by principal id, not IP,
+  // via the 'perAdmin' named throttler set's getTracker (apps/api/src/app.module.ts) —
+  // the app-wide APP_GUARD ThrottlerGuard checks every named set on every route, so no
+  // route-level guard is needed here; this decorator just tightens 'perAdmin's limit
+  // for this route from its harmlessly-high app-wide default down to the real cap.
+  @Throttle({ perAdmin: { limit: 20, ttl: 86_400_000 } })
   @UseFilters(FileTooLargeFilter)
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_SIZE_BYTES } }))
   async upload(
