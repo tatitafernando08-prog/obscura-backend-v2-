@@ -52,6 +52,8 @@
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
+    "@google-cloud/speech": "^8.0.1",
+    "@google-cloud/text-to-speech": "^7.0.0",
     "@nestjs/cli": "^10.0.0",
     "@nestjs/schematics": "^10.0.0",
     "@nestjs/testing": "^10.0.0",

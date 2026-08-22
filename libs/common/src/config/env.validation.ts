@@ -11,6 +11,7 @@ export interface EnvConfig {
   REDIS_URL: string;
   GEMINI_API_KEY: string;
   COHERE_API_KEY: string;
+  GOOGLE_APPLICATION_CREDENTIALS: string;
   AUTH_GRPC_URL: string;
   RAG_GRPC_URL: string;
   CHAT_GRPC_URL: string;
@@ -30,6 +31,7 @@ export const envValidationSchema = Joi.object<EnvConfig, true>({
   REDIS_URL: Joi.string().uri().required(),
   GEMINI_API_KEY: Joi.string().required(),
   COHERE_API_KEY: Joi.string().required(),
+  GOOGLE_APPLICATION_CREDENTIALS: Joi.string().required(),
   AUTH_GRPC_URL: Joi.string().default('127.0.0.1:50051'),
   RAG_GRPC_URL: Joi.string().default('127.0.0.1:50052'),
   CHAT_GRPC_URL: Joi.string().default('127.0.0.1:50053'),
