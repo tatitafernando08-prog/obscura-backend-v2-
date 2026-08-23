@@ -49,6 +49,15 @@ async function bootstrap() {
     },
   });
 
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.GRPC,
+    options: {
+      package: 'speech',
+      protoPath: join(process.cwd(), 'libs/proto/src/speech.proto'),
+      url: config.get('SPEECH_GRPC_URL', { infer: true }),
+    },
+  });
+
   app.use(helmet());
   app.enableCors({ origin: true, credentials: true }); // TODO: restrict to real web-client origin once §1's website client exists
   app.useGlobalInterceptors(new RequestIdInterceptor());

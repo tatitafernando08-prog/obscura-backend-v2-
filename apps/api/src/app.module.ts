@@ -6,6 +6,7 @@ import { DatabaseModule } from '@app/database';
 import { AuthServiceModule } from '@app/auth-service';
 import { RagServiceModule } from '@app/rag-service';
 import { ChatServiceModule } from '@app/chat-service';
+import { SpeechServiceModule } from '@app/speech-service';
 import { GatewayModule } from '@app/gateway';
 import { IngestionServiceModule } from '@app/ingestion-service';
 
@@ -16,6 +17,7 @@ import { IngestionServiceModule } from '@app/ingestion-service';
     AuthServiceModule,
     RagServiceModule,
     ChatServiceModule,
+    SpeechServiceModule,
     GatewayModule,
     IngestionServiceModule,
     ThrottlerModule.forRoot([
