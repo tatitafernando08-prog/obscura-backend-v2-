@@ -24,6 +24,8 @@
     "promote-admin": "ts-node -r tsconfig-paths/register scripts/promote-admin.ts"
   },
   "dependencies": {
+    "@google-cloud/speech": "^8.0.1",
+    "@google-cloud/text-to-speech": "^7.0.0",
     "@google/generative-ai": "^0.24.1",
     "@grpc/grpc-js": "^1.14.4",
     "@grpc/proto-loader": "^0.8.1",
@@ -52,8 +54,6 @@
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
-    "@google-cloud/speech": "^8.0.1",
-    "@google-cloud/text-to-speech": "^7.0.0",
     "@nestjs/cli": "^10.0.0",
     "@nestjs/schematics": "^10.0.0",
     "@nestjs/testing": "^10.0.0",
