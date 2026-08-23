@@ -89,4 +89,16 @@ describe('POST /voice/ask (e2e)', () => {
     expect(res.headers['content-type']).toBe('application/octet-stream');
     expect(res.body.length).toBeGreaterThan(0);
   }, 30_000);
+
+  it('returns a synthesized "not supported" message (not a bare error) for medium=sinhala', async () => {
+    const wavPath = join(__dirname, 'fixtures/sample-question.wav');
+    const res = await request(app.getHttpServer())
+      .post('/voice/ask?medium=sinhala')
+      .set('X-Device-Key', process.env.TEST_DEVICE_KEY!)
+      .attach('audio', readFileSync(wavPath), 'mic.wav')
+      .expect(200); // 200, not 422 — the robot still gets playable audio back
+
+    expect(res.headers['content-type']).toBe('application/octet-stream');
+    expect(res.body.length).toBeGreaterThan(0);
+  }, 30_000);
 });
