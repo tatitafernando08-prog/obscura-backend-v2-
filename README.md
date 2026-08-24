@@ -35,7 +35,7 @@ A single NestJS process (Nest CLI **monorepo**: one `apps/api` entry point + sev
 | **Chat/LLM** (`chat-service`) | ✅ live | Builds a grounded prompt from retrieved excerpts, calls Gemini for a structured JSON answer, resolves citations back to real chunk metadata, and retries once with a stricter prompt if a curriculum question comes back uncited — this is what enforces the "never hallucinate" rule. |
 | **Gateway** (`gateway`) | ✅ live | Public HTTP surface, `AuthGuard`/`DeviceAuthGuard`, security hardening (helmet/CORS/rate-limiting/request-id logging), and `AskService` — the shared orchestration core (RAG search → Chat/LLM ask → persist) that both `POST /chat/ask` and `POST /voice/ask` call. |
 | **Speech** (`speech-service`) | ✅ live (Phase 2) | Google Cloud Speech-to-Text / Text-to-Speech for the voice pipeline. English/Tamil only at launch — Sinhala is explicitly rejected on the voice path (with a synthesized spoken decline). |
-| **Ingestion** (`ingestion-service`) | ⏳ not started (Phase 3) | BullMQ worker that turns uploaded past-paper PDFs into embedded, searchable `paper_chunks` (Gemini multimodal structural extraction, with a `pdf-parse` fallback). |
+| **Ingestion** (`ingestion-service`) | ✅ live (Phase 3) | BullMQ worker that turns uploaded past-paper PDFs into embedded, searchable `paper_chunks` (Gemini multimodal structural extraction, with a `pdf-parse` fallback), pushing live status over WebSocket. |
 
 **Shared libraries:** `libs/common` (validated env config), `libs/database` (raw `pg.Pool` access — **no ORM**, all SQL is hand-written and versioned as Supabase CLI migrations under `supabase/migrations/`), `libs/proto` (`.proto` contracts + `ts-proto`-generated TypeScript).
 
@@ -78,7 +78,8 @@ Being built via `IMPLEMENTATION-PLAN.md`'s 65-task phased plan (Phase 1: text ch
 
 - **Phase 1 (text chat) done:** provisioning, NestJS monorepo scaffold, validated env config, Docker Compose, proto tooling, Postgres schema, database layer, Auth Service + Gateway `AuthGuard`, HTTP hardening, RAG Service (hybrid retrieval + rerank + gRPC), Chat/LLM Service (grounded prompt builder, Gemini wrapper, citation resolver with grounding retry, gRPC), the Gateway's `AskService` orchestrator, chat session/message persistence, and the `POST /chat/ask` controller. Confirmed working end-to-end on a real mobile device (sign-up, login/logout, authenticated chat screen).
 - **Phase 2 (voice pipeline) done:** Speech Service (Google Cloud STT/TTS, English/Tamil only), wired as an in-process gRPC microservice, the device-authed `POST /voice/ask` controller (multipart WAV upload, headerless-PCM response), and the synthesized spoken decline for Sinhala-over-voice requests.
-- **Next up:** Phase 3 — PDF ingestion (BullMQ worker, `ingestion-service`) and admin tooling. Deploying Phases 1/2 to Railway is in progress (see Deployment below).
+- **Phase 3 (PDF ingestion) done:** BullMQ ingestion queue/worker, admin-only `POST /papers/upload`, Gemini multimodal PDF structural extraction with a `pdf-parse` fallback, chunk embedding + `paper_chunks` upsert, live `paper:ingestion_status` WebSocket push, `GET /papers`/`GET /papers/:id`, per-admin daily upload rate limit, and the citation-rate admin metric.
+- **Left:** end-to-end manual verification of the deployed voice and ingestion paths, and deploying to Railway (see Deployment below) — the actual remaining gap before this backend is fully shipped.
 
 Detailed task-by-task history — what was built, every code review, every fix — lives in the (gitignored) SDD execution ledger at `.superpowers/sdd/IMPLEMENTATION-PLAN/progress.md` for anyone continuing this work.
 
