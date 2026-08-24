@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import * as WebSocket from 'ws';
 import { EnvConfig } from '@app/common';
 
 const BUCKET = 'papers';
@@ -10,9 +11,13 @@ export class StorageService {
   private readonly client: SupabaseClient;
 
   constructor(config: ConfigService<EnvConfig, true>) {
+    // supabase-js always constructs a RealtimeClient, which throws at
+    // construction time on Node < 22 (no global WebSocket) unless a
+    // transport is supplied — even though this service never uses realtime.
     this.client = createClient(
       config.get('SUPABASE_URL', { infer: true }),
       config.get('SUPABASE_SERVICE_ROLE_KEY', { infer: true }),
+      { realtime: { transport: WebSocket as unknown as typeof globalThis.WebSocket } },
     );
   }
 

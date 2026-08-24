@@ -24,6 +24,7 @@
     "promote-admin": "ts-node -r tsconfig-paths/register scripts/promote-admin.ts"
   },
   "dependencies": {
+    "@bufbuild/protobuf": "^2.12.1",
     "@google-cloud/speech": "^8.0.1",
     "@google-cloud/text-to-speech": "^7.0.0",
     "@google/generative-ai": "^0.24.1",
@@ -38,6 +39,7 @@
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/websockets": "^10.4.22",
     "@supabase/supabase-js": "^2.112.3",
+    "bcrypt": "^6.0.0",
     "bullmq": "^6.1.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
@@ -51,7 +53,8 @@
     "pg": "^8.22.0",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.3",
+    "ws": "^8.21.3"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
@@ -66,9 +69,9 @@
     "@types/pdf-parse": "^1.1.5",
     "@types/pg": "^8.20.0",
     "@types/supertest": "^6.0.0",
+    "@types/ws": "^8.5.12",
     "@typescript-eslint/eslint-plugin": "^8.64.0",
     "@typescript-eslint/parser": "^8.64.0",
-    "bcrypt": "^6.0.0",
     "dotenv": "^17.4.2",
     "dotenv-cli": "^11.0.0",
     "eslint": "^8.57.1",
