@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { EnvConfig } from '@app/common';
+import { callWithAbortTimeout } from './call-with-abort-timeout';
+
+const EXTRACTION_TIMEOUT_MS = 45_000;
 
 export interface ExtractedChunk {
   content: string;
@@ -36,10 +39,17 @@ export class GeminiExtractor {
     // alias for the current-generation flash model and avoids this class of
     // breakage going forward (see libs/chat-service/src/gemini-chat.service.ts).
     const model = this.client.getGenerativeModel({ model: 'gemini-flash-latest' });
-    const result = await model.generateContent([
-      { inlineData: { mimeType: 'application/pdf', data: pdfBuffer.toString('base64') } },
-      { text: EXTRACTION_PROMPT },
-    ]);
+    const result = await callWithAbortTimeout(
+      (signal) =>
+        model.generateContent(
+          [
+            { inlineData: { mimeType: 'application/pdf', data: pdfBuffer.toString('base64') } },
+            { text: EXTRACTION_PROMPT },
+          ],
+          { signal },
+        ),
+      EXTRACTION_TIMEOUT_MS,
+    );
 
     const raw = result.response.text().trim();
     const jsonText = raw.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
