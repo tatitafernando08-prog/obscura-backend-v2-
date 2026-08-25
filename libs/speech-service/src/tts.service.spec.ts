@@ -42,4 +42,10 @@ describe('TtsService', () => {
     expect(result).toEqual({ success: false, pcm16_16k_mono: Buffer.alloc(0), error: 'sinhala_not_supported_on_voice' });
     expect(mockSynthesizeSpeech).not.toHaveBeenCalled();
   });
+
+  it('returns success:false with the real error message instead of throwing when Google TTS itself fails', async () => {
+    mockSynthesizeSpeech.mockRejectedValue(new Error('503 Service Unavailable'));
+    const result = await service.synthesize('hi', 'english');
+    expect(result).toEqual({ success: false, pcm16_16k_mono: Buffer.alloc(0), error: '503 Service Unavailable' });
+  });
 });

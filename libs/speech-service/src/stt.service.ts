@@ -19,14 +19,19 @@ export class SttService {
 
     const languageCode = STT_LANGUAGE_CODES[medium] ?? STT_LANGUAGE_CODES.english;
 
-    const [response] = await this.client.recognize({
-      audio: { content: wavAudio.toString('base64') },
-      config: {
-        encoding: 'LINEAR16' as const,
-        sampleRateHertz: 16000,
-        languageCode,
-      },
-    });
+    let response;
+    try {
+      [response] = await this.client.recognize({
+        audio: { content: wavAudio.toString('base64') },
+        config: {
+          encoding: 'LINEAR16' as const,
+          sampleRateHertz: 16000,
+          languageCode,
+        },
+      });
+    } catch (err) {
+      return { success: false, text: '', error: (err as Error).message };
+    }
 
     const transcript = response.results?.[0]?.alternatives?.[0]?.transcript;
     if (!transcript) {

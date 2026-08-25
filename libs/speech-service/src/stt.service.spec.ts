@@ -42,4 +42,10 @@ describe('SttService', () => {
     const result = await service.transcribe(Buffer.from('fake wav'), 'english');
     expect(result).toEqual({ success: false, text: '', error: 'no_speech_detected' });
   });
+
+  it('returns success:false with the real error message instead of throwing when Google Speech itself fails', async () => {
+    mockRecognize.mockRejectedValue(new Error('503 Service Unavailable'));
+    const result = await service.transcribe(Buffer.from('fake wav'), 'english');
+    expect(result).toEqual({ success: false, text: '', error: '503 Service Unavailable' });
+  });
 });

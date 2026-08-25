@@ -19,11 +19,16 @@ export class TtsService {
 
     const languageCode = TTS_LANGUAGE_CODES[medium] ?? TTS_LANGUAGE_CODES.english;
 
-    const [response] = await this.client.synthesizeSpeech({
-      input: { text },
-      voice: { languageCode, ssmlGender: 'NEUTRAL' as const },
-      audioConfig: { audioEncoding: 'LINEAR16' as const, sampleRateHertz: 16000 },
-    });
+    let response;
+    try {
+      [response] = await this.client.synthesizeSpeech({
+        input: { text },
+        voice: { languageCode, ssmlGender: 'NEUTRAL' as const },
+        audioConfig: { audioEncoding: 'LINEAR16' as const, sampleRateHertz: 16000 },
+      });
+    } catch (err) {
+      return { success: false, pcm16_16k_mono: Buffer.alloc(0), error: (err as Error).message };
+    }
 
     return {
       success: true,
