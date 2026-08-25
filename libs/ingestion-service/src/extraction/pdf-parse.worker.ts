@@ -3,6 +3,7 @@ import { isMainThread, parentPort, workerData } from 'worker_threads';
 // esModuleInterop, matching the same import pattern already used elsewhere
 // (e.g. ingestion.processor.ts).
 import pdfParse = require('pdf-parse');
+import { describeError } from './describe-error';
 
 interface WorkerInput {
   pdfBuffer: Buffer;
@@ -14,7 +15,7 @@ async function main(): Promise<void> {
     const parsed = await pdfParse(pdfBuffer);
     parentPort!.postMessage({ text: parsed.text });
   } catch (err) {
-    parentPort!.postMessage({ error: (err as Error).message });
+    parentPort!.postMessage({ error: describeError(err) });
   }
 }
 

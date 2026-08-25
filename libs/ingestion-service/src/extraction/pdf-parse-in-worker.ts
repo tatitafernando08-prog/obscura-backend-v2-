@@ -1,5 +1,5 @@
-import { Worker } from 'worker_threads';
 import { join } from 'path';
+import { runWorker } from './run-worker';
 // Side-effect-only import: forces tsc's import-reachability analysis to
 // compile pdf-parse.worker.ts into dist (it's otherwise only referenced via
 // the runtime string path below, which tsc can't see). Guarded internally by
@@ -26,22 +26,10 @@ const IS_TS_SOURCE = __filename.endsWith('.ts');
 const WORKER_PATH = join(__dirname, IS_TS_SOURCE ? 'pdf-parse.worker.ts' : 'pdf-parse.worker.js');
 const WORKER_EXEC_ARGV = IS_TS_SOURCE ? ['-r', 'ts-node/register/transpile-only'] : [];
 
-export function parsePdfInWorker(pdfBuffer: Buffer): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const worker = new Worker(WORKER_PATH, {
-      execArgv: WORKER_EXEC_ARGV,
-      workerData: { pdfBuffer },
-    });
-
-    worker.once('message', (msg: { text?: string; error?: string }) => {
-      void worker.terminate();
-      if (msg.error) reject(new Error(msg.error));
-      else resolve(msg.text ?? '');
-    });
-
-    worker.once('error', (err) => {
-      void worker.terminate();
-      reject(err);
-    });
+export async function parsePdfInWorker(pdfBuffer: Buffer): Promise<string> {
+  const msg = await runWorker<{ text?: string; error?: string }>(WORKER_PATH, WORKER_EXEC_ARGV, {
+    pdfBuffer,
   });
+  if (msg.error) throw new Error(msg.error);
+  return msg.text ?? '';
 }
