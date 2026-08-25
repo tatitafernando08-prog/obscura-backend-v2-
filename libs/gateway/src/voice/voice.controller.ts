@@ -7,6 +7,7 @@ import { ChatSessionsRepository } from '@app/database';
 import { SPEECH_GRPC_CLIENT } from '../grpc-clients/speech-client.provider';
 import { SpeechServiceClient } from '@app/proto/generated/speech';
 import { MultipartWavInterceptor } from './multipart-wav.interceptor';
+import { VoiceAskQueryDto } from './dto/voice-ask-query.dto';
 
 const VOICE_PIPELINE_HARD_CEILING_MS = 25_000;
 
@@ -63,11 +64,11 @@ export class VoiceController {
   @UseInterceptors(MultipartWavInterceptor('audio'))
   async ask(
     @UploadedFile() audio: Express.Multer.File,
-    @Query('subject') subject: string | undefined,
-    @Query('medium') medium: string,
+    @Query() query: VoiceAskQueryDto,
     @Req() req: DeviceAuthedRequest,
     @Res() res: Response,
   ) {
+    const { subject, medium } = query;
     const stageTimings: Record<string, number> = {};
     const start = Date.now();
 

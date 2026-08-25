@@ -54,8 +54,7 @@ describe('VoiceController', () => {
 
     await controller.ask(
       { buffer: Buffer.from('wav') } as any,
-      'Economics',
-      'english',
+      { subject: 'Economics', medium: 'english' },
       req,
       mockResponse(),
     );
