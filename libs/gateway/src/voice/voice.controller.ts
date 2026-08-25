@@ -12,6 +12,7 @@ const VOICE_PIPELINE_HARD_CEILING_MS = 25_000;
 
 type DeviceAuthedRequest = Request & {
   device: { deviceId: string; ownerStudentId: string | null };
+  requestId?: string;
 };
 
 /**
@@ -98,6 +99,7 @@ export class VoiceController {
       medium,
       history,
       sessionId,
+      requestId: req.requestId,
     });
     stageTimings.ask = Date.now() - askStart;
 
