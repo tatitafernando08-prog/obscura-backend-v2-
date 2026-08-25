@@ -1,9 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-// pdf-parse uses `export =` (CommonJS) and this project's tsconfig doesn't set
-// esModuleInterop, so a default import would compile to a `.default` access that
-// doesn't exist on the module and throw "is not a function" at call time.
-import pdfParse = require('pdf-parse');
 import { DatabaseService, StorageService } from '@app/database';
 // Deep import (not the `@app/gateway` barrel) so this file never triggers
 // `gateway.module.ts`, which imports `IngestionQueueModule` from this lib's
@@ -14,6 +10,7 @@ import { RealtimeGateway } from '@app/gateway/realtime/realtime.gateway';
 import { IngestionJobPayload } from './queue/ingestion-job.types';
 import { GeminiExtractor, ExtractedChunk } from './extraction/gemini-extractor';
 import { chunkByFixedWindow } from './extraction/fallback-chunker';
+import { parsePdfInWorker } from './extraction/pdf-parse-in-worker';
 import { ChunkUpsertService } from './chunk-upsert.service';
 
 @Injectable()
@@ -43,8 +40,8 @@ export class IngestionProcessor {
         this.logger.warn(
           `Gemini extraction failed for paper ${paperId}, falling back to fixed-window: ${(extractionErr as Error).message}`,
         );
-        const parsed = await pdfParse(pdfBuffer);
-        chunks = chunkByFixedWindow(parsed.text);
+        const text = await parsePdfInWorker(pdfBuffer);
+        chunks = chunkByFixedWindow(text);
       }
 
       const chunkCount = await this.chunkUpsert.upsertChunks(paperId, chunks);
