@@ -9,6 +9,18 @@ import {
   SynthesizeResponse,
 } from '@app/proto/generated/speech';
 
+// The real runtime shape of `SynthesizeResponse` as serialized by
+// @grpc/proto-loader's dynamically-loaded message type, which names this
+// field `pcm16_16kMono` -- NOT `pcm1616kMono`, which is what the ts-proto
+// `SynthesizeResponse` type below (used only for the method's public
+// signature) calls it. See the inline comment on `synthesize()` for the
+// full writeup.
+interface SynthesizeResponseWireShape {
+  success: boolean;
+  error: string;
+  pcm16_16kMono: Buffer;
+}
+
 @Controller()
 export class SpeechController {
   constructor(
@@ -37,7 +49,7 @@ export class SpeechController {
     // compile-time shape checking) calls the field. Using the ts-proto name
     // here silently serializes the bytes field as empty on the wire, so the
     // object literal must use the real runtime key instead.
-    const response: Record<string, unknown> = {
+    const response: SynthesizeResponseWireShape = {
       success: result.success,
       error: result.error,
       pcm16_16kMono: result.pcm16_16k_mono,
