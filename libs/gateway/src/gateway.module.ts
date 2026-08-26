@@ -5,6 +5,8 @@ import { PapersUploadController } from './admin/papers-upload.controller';
 import { MetricsController } from './admin/metrics.controller';
 import { PapersController } from './papers/papers.controller';
 import { VoiceController } from './voice/voice.controller';
+import { FlashcardsController } from './flashcards/flashcards.controller';
+import { FlashcardGeneratorService } from './flashcards/flashcard-generator.service';
 import { GatewayAskService } from './ask/ask.service';
 import { AuthGuard } from './guards/auth.guard';
 import { AdminGuard } from './admin/guards/admin.guard';
@@ -35,9 +37,11 @@ import { RealtimeModule } from './realtime/realtime.module';
     PapersController,
     MetricsController,
     VoiceController,
+    FlashcardsController,
   ],
   providers: [
     GatewayAskService,
+    FlashcardGeneratorService,
     AuthGuard,
     AdminGuard,
     DeviceAuthGuard,
