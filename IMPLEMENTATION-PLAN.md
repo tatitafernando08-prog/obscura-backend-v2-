@@ -8,6 +8,17 @@
 
 **Tech Stack:** Node.js 20 LTS, npm, NestJS 10.x, TypeScript 5.x (strict), `@nestjs/microservices` (gRPC, `@grpc/grpc-js` + `@grpc/proto-loader`), `ts-proto` for generated types, raw `pg` (node-postgres) for all Postgres access (no ORM), Supabase CLI for SQL migrations, `@supabase/supabase-js` (service-role) for Storage, `jsonwebtoken` + `jwks-rsa` for Supabase JWT verification, `bcrypt` for device-key hashing, `class-validator`/`class-transformer` DTOs, `@google/generative-ai` (Gemini 2.5 Flash + `text-embedding-004`), `cohere-ai` (`rerank-v3.5`), `@google-cloud/speech` + `@google-cloud/text-to-speech` (Phase 2), `bullmq` + `ioredis` (Phase 3), Jest + `supertest`, Docker Compose for local dev, Koyeb for deployment.
 
+## Status (as of 2026-08-26)
+
+63 of 65 tasks are done. This plan's own checkboxes are left unchecked throughout (per this project's established practice — the SDD execution ledger at `.superpowers/sdd/IMPLEMENTATION-PLAN/progress.md`, gitignored, is the authoritative task-by-task status, not this file); this section is a summary, not a replacement for that ledger.
+
+- **Deploy target switched from Koyeb to Railway** partway through (persistent Koyeb dashboard/CLI-auth issues) — every task below that says "Koyeb" (36, 48, 49, 50, 65) actually targets Railway. Live at `https://obscura-api-production-1ffa.up.railway.app`.
+- **Two real production bugs found and fixed post-deploy, not caught by any task's original spec:**
+  - `pdf-parse` (Task 57's fallback chunker) corrupts its own internal parse state when concurrent Node I/O races it on the main thread — reproduced live in production, fixed by isolating the parse in its own `worker_threads.Worker`.
+  - `GeminiExtractor` (Task 55) had no timeout on its live Gemini call, so a Gemini hang blocked the ingestion pipeline forever, including the pdf-parse fallback above. Fixed with a 45s `AbortController`-based timeout.
+- **Four Minor findings deferred across earlier task reviews (Tasks 39/40/46) are now all cleared:** `VoiceController` propagates request-id into its gRPC calls; STT/TTS catch live API failures instead of throwing uncaught; `/voice/ask`'s query params are validated via a DTO; `speech.controller.ts`'s response cast is a real interface, not a blanket `Record`.
+- **Remaining (2 tasks, both otherwise complete):** Task 64's final citation check and Task 35's final chat-answer check are blocked purely on Google Gemini's free-tier daily quota (20 requests/day) — every other step of both is independently verified working against production. Not a code issue; retest once the quota resets.
+
 ## Global Constraints
 
 - Node.js 20 LTS, npm only (no yarn/pnpm) — every command in this plan assumes `npm`.
