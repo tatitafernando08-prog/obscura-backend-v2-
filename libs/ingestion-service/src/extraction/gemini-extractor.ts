@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { EnvConfig } from '@app/common';
-import { callWithAbortTimeout } from './call-with-abort-timeout';
+import { EnvConfig, callWithAbortTimeout } from '@app/common';
 
 const EXTRACTION_TIMEOUT_MS = 45_000;
 

@@ -3,6 +3,7 @@ import { DatabaseService } from './database.service';
 import { StorageService } from './storage.service';
 import { StudentsRepository } from './repositories/students.repository';
 import { ChatSessionsRepository } from './repositories/chat-sessions.repository';
+import { GeminiUsageRepository } from './repositories/gemini-usage.repository';
 
 @Global()
 @Module({
@@ -11,12 +12,14 @@ import { ChatSessionsRepository } from './repositories/chat-sessions.repository'
     StorageService,
     StudentsRepository,
     ChatSessionsRepository,
+    GeminiUsageRepository,
   ],
   exports: [
     DatabaseService,
     StorageService,
     StudentsRepository,
     ChatSessionsRepository,
+    GeminiUsageRepository,
   ],
 })
 export class DatabaseModule {}
