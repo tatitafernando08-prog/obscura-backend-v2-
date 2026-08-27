@@ -72,4 +72,43 @@ describe('GeminiUsageRepository', () => {
 
     await db.query('delete from gemini_daily_usage where feature in ($1, $2)', [featureA, featureB]);
   });
+
+  describe('releaseSlot', () => {
+    it('decrements a reserved slot back, so a failed downstream call does not permanently cost the quota', async () => {
+      const f = `${feature}-release`;
+      await repo.tryReserveSlot(f, 5); // count now 1
+      await repo.tryReserveSlot(f, 5); // count now 2
+
+      await repo.releaseSlot(f);
+
+      const rows = await db.query<{ request_count: number }>(
+        `select request_count from gemini_daily_usage where usage_date = current_date and feature = $1`,
+        [f],
+      );
+      expect(rows[0].request_count).toBe(1);
+
+      await db.query('delete from gemini_daily_usage where feature = $1', [f]);
+    });
+
+    it('does not go below zero', async () => {
+      const f = `${feature}-release-floor`;
+      await repo.tryReserveSlot(f, 5); // count now 1
+
+      await repo.releaseSlot(f);
+      await repo.releaseSlot(f); // second release with nothing left to give back
+
+      const rows = await db.query<{ request_count: number }>(
+        `select request_count from gemini_daily_usage where usage_date = current_date and feature = $1`,
+        [f],
+      );
+      expect(rows[0].request_count).toBe(0);
+
+      await db.query('delete from gemini_daily_usage where feature = $1', [f]);
+    });
+
+    it('is a safe no-op when no row exists yet for today', async () => {
+      const f = `${feature}-release-missing`;
+      await expect(repo.releaseSlot(f)).resolves.toBeUndefined();
+    });
+  });
 });

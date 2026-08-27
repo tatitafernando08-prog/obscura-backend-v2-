@@ -24,4 +24,18 @@ export class GeminiUsageRepository {
     );
     return rows.length > 0;
   }
+
+  /**
+   * Gives back a slot reserved by `tryReserveSlot` -- call this when the
+   * downstream Gemini call the slot was reserved for ends up failing, so a
+   * failure doesn't permanently cost part of the feature's daily budget.
+   */
+  async releaseSlot(feature: string): Promise<void> {
+    await this.db.query(
+      `update gemini_daily_usage
+       set request_count = greatest(request_count - 1, 0)
+       where usage_date = current_date and feature = $1`,
+      [feature],
+    );
+  }
 }

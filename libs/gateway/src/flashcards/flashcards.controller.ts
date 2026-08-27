@@ -64,12 +64,19 @@ export class FlashcardsController {
       );
     }
 
-    const cards = await this.generator.generate(
-      body.subject,
-      searchResult.chunks.map((c) => c.content),
-      body.count,
-    );
-
-    return { cards };
+    try {
+      const cards = await this.generator.generate(
+        body.subject,
+        searchResult.chunks.map((c) => c.content),
+        body.count,
+      );
+      return { cards };
+    } catch (err) {
+      // The slot above is reserved before we know Gemini will actually
+      // succeed -- give it back on failure so a Gemini-side error doesn't
+      // permanently cost part of the feature's scarce daily budget.
+      await this.geminiUsage.releaseSlot('flashcards');
+      throw err;
+    }
   }
 }

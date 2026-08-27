@@ -24,6 +24,7 @@ function chunk(content: string) {
 describe('FlashcardsController', () => {
   const search = jest.fn();
   const tryReserveSlot = jest.fn();
+  const releaseSlot = jest.fn();
   const generate = jest.fn();
   let controller: FlashcardsController;
 
@@ -33,7 +34,7 @@ describe('FlashcardsController', () => {
       controllers: [FlashcardsController],
       providers: [
         { provide: RAG_GRPC_CLIENT, useValue: { search } },
-        { provide: GeminiUsageRepository, useValue: { tryReserveSlot } },
+        { provide: GeminiUsageRepository, useValue: { tryReserveSlot, releaseSlot } },
         { provide: FlashcardGeneratorService, useValue: { generate } },
       ],
     })
@@ -126,5 +127,16 @@ describe('FlashcardsController', () => {
     expect(tryReserveSlot).toHaveBeenCalledWith('flashcards', expect.any(Number));
     expect(generate).toHaveBeenCalledWith('Chemistry', ['excerpt one', 'excerpt two'], 10);
     expect(result).toEqual({ cards: [{ front: 'Q', back: 'A' }] });
+    expect(releaseSlot).not.toHaveBeenCalled();
+  });
+
+  it('releases the reserved quota slot when generation fails, and still surfaces the original error', async () => {
+    search.mockReturnValue(of({ chunks: [chunk('excerpt')] }));
+    tryReserveSlot.mockResolvedValue(true);
+    const generationError = new Error('Gemini call failed');
+    generate.mockRejectedValue(generationError);
+
+    await expect(controller.generate(VALID_BODY as any, req)).rejects.toBe(generationError);
+    expect(releaseSlot).toHaveBeenCalledWith('flashcards');
   });
 });
