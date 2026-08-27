@@ -4,10 +4,18 @@ import { GeminiChatService } from './gemini-chat.service';
 
 const mockGenerateContent = jest.fn();
 jest.mock('@google/generative-ai', () => ({
+  ...jest.requireActual('@google/generative-ai'),
   GoogleGenerativeAI: jest.fn().mockImplementation(() => ({
     getGenerativeModel: () => ({ generateContent: mockGenerateContent }),
   })),
 }));
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { GoogleGenerativeAIFetchError } = jest.requireActual('@google/generative-ai');
+
+function fetchError(status: number, message: string) {
+  return new GoogleGenerativeAIFetchError(message, status, 'Error', undefined);
+}
 
 describe('GeminiChatService', () => {
   let service: GeminiChatService;
@@ -51,5 +59,35 @@ describe('GeminiChatService', () => {
     });
     const result = await service.generate('some prompt');
     expect(result.citedIndices).toEqual([1, 3]);
+  });
+
+  describe('transient 503 retry', () => {
+    beforeEach(() => {
+      mockGenerateContent.mockReset();
+      jest.useFakeTimers();
+    });
+    afterEach(() => jest.useRealTimers());
+
+    it('retries a transient 503 and returns the eventual success', async () => {
+      mockGenerateContent
+        .mockRejectedValueOnce(fetchError(503, 'high demand'))
+        .mockResolvedValueOnce({
+          response: { text: () => '{"answer":"ok","is_curriculum_question":false,"cited_indices":[]}' },
+        });
+
+      const promise = service.generate('some prompt');
+      await jest.runAllTimersAsync();
+
+      await expect(promise).resolves.toMatchObject({ answer: 'ok' });
+      expect(mockGenerateContent).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not retry a 429 quota error -- rejects immediately', async () => {
+      const quotaError = fetchError(429, 'GenerateRequestsPerDayPerProjectPerModel-FreeTier');
+      mockGenerateContent.mockRejectedValue(quotaError);
+
+      await expect(service.generate('some prompt')).rejects.toBe(quotaError);
+      expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+    });
   });
 });

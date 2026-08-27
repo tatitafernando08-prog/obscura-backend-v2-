@@ -1,7 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { EnvConfig } from '@app/common';
+import { GoogleGenerativeAI, GoogleGenerativeAIFetchError } from '@google/generative-ai';
+import { EnvConfig, callWithRetry } from '@app/common';
+
+const RETRY_MAX_ATTEMPTS = 3;
+const RETRY_BASE_DELAY_MS = 1000;
+
+function isTransientGeminiError(err: unknown): boolean {
+  return err instanceof GoogleGenerativeAIFetchError && err.status === 503;
+}
 
 export interface GeminiStructuredResult {
   answer: string;
@@ -23,7 +30,11 @@ export class GeminiChatService {
     // alias for the current-generation flash model and avoids this class of
     // breakage going forward.
     const model = this.client.getGenerativeModel({ model: 'gemini-flash-latest' });
-    const result = await model.generateContent(prompt);
+    const result = await callWithRetry(() => model.generateContent(prompt), {
+      maxAttempts: RETRY_MAX_ATTEMPTS,
+      baseDelayMs: RETRY_BASE_DELAY_MS,
+      isRetryable: isTransientGeminiError,
+    });
     const raw = result.response.text().trim();
     const jsonText = raw.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
 

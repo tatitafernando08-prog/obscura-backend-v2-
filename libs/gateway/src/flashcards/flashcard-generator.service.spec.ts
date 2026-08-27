@@ -10,10 +10,18 @@ import { FlashcardGeneratorService } from './flashcard-generator.service';
 // kind of external-API unit test in this codebase.
 const mockGenerateContent = jest.fn();
 jest.mock('@google/generative-ai', () => ({
+  ...jest.requireActual('@google/generative-ai'),
   GoogleGenerativeAI: jest.fn().mockImplementation(() => ({
     getGenerativeModel: jest.fn(() => ({ generateContent: mockGenerateContent })),
   })),
 }));
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { GoogleGenerativeAIFetchError } = jest.requireActual('@google/generative-ai');
+
+function fetchError(status: number, message: string) {
+  return new GoogleGenerativeAIFetchError(message, status, 'Error', undefined);
+}
 
 function geminiResponse(text: string) {
   return { response: { text: () => text } };
@@ -84,5 +92,33 @@ describe('FlashcardGeneratorService', () => {
 
     const [, options] = mockGenerateContent.mock.calls[0];
     expect(options.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  describe('transient 503 retry', () => {
+    beforeEach(() => {
+      mockGenerateContent.mockReset();
+      jest.useFakeTimers();
+    });
+    afterEach(() => jest.useRealTimers());
+
+    it('retries a transient 503 and returns the eventual success', async () => {
+      mockGenerateContent
+        .mockRejectedValueOnce(fetchError(503, 'high demand'))
+        .mockResolvedValueOnce(geminiResponse(JSON.stringify([{ front: 'Q', back: 'A' }])));
+
+      const promise = service.generate('Economics', ['excerpt'], 1);
+      await jest.runAllTimersAsync();
+
+      await expect(promise).resolves.toEqual([{ front: 'Q', back: 'A' }]);
+      expect(mockGenerateContent).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not retry a 429 quota error -- rejects immediately', async () => {
+      const quotaError = fetchError(429, 'GenerateRequestsPerDayPerProjectPerModel-FreeTier');
+      mockGenerateContent.mockRejectedValue(quotaError);
+
+      await expect(service.generate('Economics', ['excerpt'], 1)).rejects.toBe(quotaError);
+      expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+    });
   });
 });

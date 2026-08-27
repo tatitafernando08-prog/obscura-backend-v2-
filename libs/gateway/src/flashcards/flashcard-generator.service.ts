@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { EnvConfig, callWithAbortTimeout } from '@app/common';
+import { GoogleGenerativeAI, GoogleGenerativeAIFetchError } from '@google/generative-ai';
+import { EnvConfig, callWithAbortTimeout, callWithRetry } from '@app/common';
 
 export interface GeneratedCard {
   front: string;
@@ -9,6 +9,12 @@ export interface GeneratedCard {
 }
 
 const GENERATION_TIMEOUT_MS = 45_000;
+const RETRY_MAX_ATTEMPTS = 3;
+const RETRY_BASE_DELAY_MS = 1000;
+
+function isTransientGeminiError(err: unknown): boolean {
+  return err instanceof GoogleGenerativeAIFetchError && err.status === 503;
+}
 
 @Injectable()
 export class FlashcardGeneratorService {
@@ -22,9 +28,9 @@ export class FlashcardGeneratorService {
     const model = this.client.getGenerativeModel({ model: 'gemini-flash-latest' });
     const prompt = buildPrompt(subject, chunkContents, count);
 
-    const result = await callWithAbortTimeout(
-      (signal) => model.generateContent(prompt, { signal }),
-      GENERATION_TIMEOUT_MS,
+    const result = await callWithRetry(
+      () => callWithAbortTimeout((signal) => model.generateContent(prompt, { signal }), GENERATION_TIMEOUT_MS),
+      { maxAttempts: RETRY_MAX_ATTEMPTS, baseDelayMs: RETRY_BASE_DELAY_MS, isRetryable: isTransientGeminiError },
     );
 
     const raw = result.response.text().trim();
