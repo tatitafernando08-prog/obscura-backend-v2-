@@ -1,4 +1,4 @@
-import { Module, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Module, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Worker } from 'bullmq';
 import { EnvConfig } from '@app/common';
@@ -20,11 +20,17 @@ import { GeminiEmbeddingService } from '@app/rag-service';
   exports: [IngestionProcessor],
 })
 export class IngestionServiceModule implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(IngestionServiceModule.name);
   private worker: Worker | null = null;
 
   constructor(private readonly processor: IngestionProcessor, private readonly config: ConfigService<EnvConfig, true>) {}
 
   onModuleInit(): void {
+    if (!this.config.get('INGESTION_WORKER_ENABLED', { infer: true })) {
+      this.logger.warn('Ingestion worker disabled via INGESTION_WORKER_ENABLED=false — queued papers will not be processed until it is re-enabled.');
+      return;
+    }
+
     this.worker = new Worker(
       INGESTION_QUEUE_NAME,
       (job) => this.processor.process(job),
