@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
+import { ValidationPipe } from '@nestjs/common';
 import { join } from 'path';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
@@ -48,9 +49,19 @@ async function bootstrap() {
     },
   });
 
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.GRPC,
+    options: {
+      package: 'speech',
+      protoPath: join(process.cwd(), 'libs/proto/src/speech.proto'),
+      url: config.get('SPEECH_GRPC_URL', { infer: true }),
+    },
+  });
+
   app.use(helmet());
   app.enableCors({ origin: true, credentials: true }); // TODO: restrict to real web-client origin once §1's website client exists
   app.useGlobalInterceptors(new RequestIdInterceptor());
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   await app.startAllMicroservices();
   await app.listen(config.get('PORT', { infer: true }));

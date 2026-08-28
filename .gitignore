@@ -5,3 +5,4 @@ dist
 secrets/
 .superpowers/
 libs/proto/src/generated
+graphify-out/

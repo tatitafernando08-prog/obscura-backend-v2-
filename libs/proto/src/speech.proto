@@ -1,0 +1,29 @@
+syntax = "proto3";
+package speech;
+
+service SpeechService {
+  rpc Transcribe (TranscribeRequest) returns (TranscribeResponse);
+  rpc Synthesize (SynthesizeRequest) returns (SynthesizeResponse);
+}
+
+message TranscribeRequest {
+  bytes wav_audio = 1;
+  string medium = 2; // "english" | "tamil" — "sinhala" is rejected
+}
+
+message TranscribeResponse {
+  bool success = 1;
+  string text = 2;
+  string error = 3;
+}
+
+message SynthesizeRequest {
+  string text = 1;
+  string medium = 2;
+}
+
+message SynthesizeResponse {
+  bool success = 1;
+  bytes pcm16_16k_mono = 2;
+  string error = 3;
+}

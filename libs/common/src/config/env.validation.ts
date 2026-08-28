@@ -9,8 +9,10 @@ export interface EnvConfig {
   SUPABASE_JWKS_URL: string;
   DATABASE_URL: string;
   REDIS_URL: string;
+  INGESTION_WORKER_ENABLED: boolean;
   GEMINI_API_KEY: string;
   COHERE_API_KEY: string;
+  GOOGLE_APPLICATION_CREDENTIALS: string;
   AUTH_GRPC_URL: string;
   RAG_GRPC_URL: string;
   CHAT_GRPC_URL: string;
@@ -28,8 +30,14 @@ export const envValidationSchema = Joi.object<EnvConfig, true>({
   SUPABASE_JWKS_URL: Joi.string().uri().required(),
   DATABASE_URL: Joi.string().uri().required(),
   REDIS_URL: Joi.string().uri().required(),
+  // Lets the BullMQ ingestion worker be stopped independently of Redis's own
+  // reachability -- e.g. while Upstash's monthly request cap is exhausted
+  // and no PDF ingestion is actually needed, so its blocking bzpopmin retry
+  // loop doesn't run at all rather than spinning against a rejecting Redis.
+  INGESTION_WORKER_ENABLED: Joi.boolean().default(true),
   GEMINI_API_KEY: Joi.string().required(),
   COHERE_API_KEY: Joi.string().required(),
+  GOOGLE_APPLICATION_CREDENTIALS: Joi.string().required(),
   AUTH_GRPC_URL: Joi.string().default('127.0.0.1:50051'),
   RAG_GRPC_URL: Joi.string().default('127.0.0.1:50052'),
   CHAT_GRPC_URL: Joi.string().default('127.0.0.1:50053'),
