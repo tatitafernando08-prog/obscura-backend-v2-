@@ -11,10 +11,14 @@ jest.mock('@google/generative-ai', () => ({
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { GoogleGenerativeAIFetchError } = jest.requireActual('@google/generative-ai');
+const { GoogleGenerativeAIFetchError, GoogleGenerativeAIAbortError } = jest.requireActual('@google/generative-ai');
 
 function fetchError(status: number, message: string) {
   return new GoogleGenerativeAIFetchError(message, status, 'Error', undefined);
+}
+
+function okResponse() {
+  return { response: { text: () => '{"answer":"ok","is_curriculum_question":false,"cited_indices":[]}' } };
 }
 
 describe('GeminiChatService', () => {
@@ -88,6 +92,35 @@ describe('GeminiChatService', () => {
 
       await expect(service.generate('some prompt')).rejects.toBe(quotaError);
       expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('hang / timeout handling', () => {
+    beforeEach(() => {
+      mockGenerateContent.mockReset();
+      jest.useFakeTimers();
+    });
+    afterEach(() => jest.useRealTimers());
+
+    it('passes an AbortSignal through to generateContent so a hang is bounded', async () => {
+      mockGenerateContent.mockResolvedValue(okResponse());
+
+      await service.generate('some prompt');
+
+      const [, options] = mockGenerateContent.mock.calls[0];
+      expect(options.signal).toBeInstanceOf(AbortSignal);
+    });
+
+    it('retries a Gemini abort/timeout error and returns the eventual success', async () => {
+      mockGenerateContent
+        .mockRejectedValueOnce(new GoogleGenerativeAIAbortError('Request aborted when fetching'))
+        .mockResolvedValueOnce(okResponse());
+
+      const promise = service.generate('some prompt');
+      await jest.runAllTimersAsync();
+
+      await expect(promise).resolves.toMatchObject({ answer: 'ok' });
+      expect(mockGenerateContent).toHaveBeenCalledTimes(2);
     });
   });
 });

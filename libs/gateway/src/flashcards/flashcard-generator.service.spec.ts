@@ -17,7 +17,7 @@ jest.mock('@google/generative-ai', () => ({
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { GoogleGenerativeAIFetchError } = jest.requireActual('@google/generative-ai');
+const { GoogleGenerativeAIFetchError, GoogleGenerativeAIAbortError } = jest.requireActual('@google/generative-ai');
 
 function fetchError(status: number, message: string) {
   return new GoogleGenerativeAIFetchError(message, status, 'Error', undefined);
@@ -119,6 +119,18 @@ describe('FlashcardGeneratorService', () => {
 
       await expect(service.generate('Economics', ['excerpt'], 1)).rejects.toBe(quotaError);
       expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+    });
+
+    it('retries a Gemini abort/timeout error and returns the eventual success', async () => {
+      mockGenerateContent
+        .mockRejectedValueOnce(new GoogleGenerativeAIAbortError('Request aborted when fetching'))
+        .mockResolvedValueOnce(geminiResponse(JSON.stringify([{ front: 'Q', back: 'A' }])));
+
+      const promise = service.generate('Economics', ['excerpt'], 1);
+      await jest.runAllTimersAsync();
+
+      await expect(promise).resolves.toEqual([{ front: 'Q', back: 'A' }]);
+      expect(mockGenerateContent).toHaveBeenCalledTimes(2);
     });
   });
 });

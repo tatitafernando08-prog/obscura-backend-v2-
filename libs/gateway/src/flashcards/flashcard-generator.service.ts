@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GoogleGenerativeAI, GoogleGenerativeAIFetchError } from '@google/generative-ai';
+import { GoogleGenerativeAI, GoogleGenerativeAIFetchError, GoogleGenerativeAIAbortError } from '@google/generative-ai';
 import { EnvConfig, callWithAbortTimeout, callWithRetry } from '@app/common';
 
 export interface GeneratedCard {
@@ -13,7 +13,11 @@ const RETRY_MAX_ATTEMPTS = 3;
 const RETRY_BASE_DELAY_MS = 1000;
 
 function isTransientGeminiError(err: unknown): boolean {
-  return err instanceof GoogleGenerativeAIFetchError && err.status === 503;
+  // A 503 is Gemini saying "busy, try again"; an abort error means *we*
+  // gave up waiting after GENERATION_TIMEOUT_MS -- Gemini under load has
+  // been observed hanging with zero bytes instead of a fast error, and
+  // that hang deserves the same retry treatment as an explicit 503.
+  return (err instanceof GoogleGenerativeAIFetchError && err.status === 503) || err instanceof GoogleGenerativeAIAbortError;
 }
 
 @Injectable()
