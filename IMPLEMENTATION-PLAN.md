@@ -8,7 +8,7 @@
 
 **Tech Stack:** Node.js 20 LTS, npm, NestJS 10.x, TypeScript 5.x (strict), `@nestjs/microservices` (gRPC, `@grpc/grpc-js` + `@grpc/proto-loader`), `ts-proto` for generated types, raw `pg` (node-postgres) for all Postgres access (no ORM), Supabase CLI for SQL migrations, `@supabase/supabase-js` (service-role) for Storage, `jsonwebtoken` + `jwks-rsa` for Supabase JWT verification, `bcrypt` for device-key hashing, `class-validator`/`class-transformer` DTOs, `@google/generative-ai` (Gemini 2.5 Flash + `text-embedding-004`), `cohere-ai` (`rerank-v3.5`), `@google-cloud/speech` + `@google-cloud/text-to-speech` (Phase 2), `bullmq` + `ioredis` (Phase 3), Jest + `supertest`, Docker Compose for local dev, Koyeb for deployment.
 
-## Status (as of 2026-08-26)
+## Status (as of 2026-08-28)
 
 63 of 65 tasks are done. This plan's own checkboxes are left unchecked throughout (per this project's established practice — the SDD execution ledger at `.superpowers/sdd/IMPLEMENTATION-PLAN/progress.md`, gitignored, is the authoritative task-by-task status, not this file); this section is a summary, not a replacement for that ledger.
 
@@ -17,7 +17,10 @@
   - `pdf-parse` (Task 57's fallback chunker) corrupts its own internal parse state when concurrent Node I/O races it on the main thread — reproduced live in production, fixed by isolating the parse in its own `worker_threads.Worker`.
   - `GeminiExtractor` (Task 55) had no timeout on its live Gemini call, so a Gemini hang blocked the ingestion pipeline forever, including the pdf-parse fallback above. Fixed with a 45s `AbortController`-based timeout.
 - **Four Minor findings deferred across earlier task reviews (Tasks 39/40/46) are now all cleared:** `VoiceController` propagates request-id into its gRPC calls; STT/TTS catch live API failures instead of throwing uncaught; `/voice/ask`'s query params are validated via a DTO; `speech.controller.ts`'s response cast is a real interface, not a blanket `Record`.
-- **Remaining (2 tasks, both otherwise complete):** Task 64's final citation check and Task 35's final chat-answer check are blocked purely on Google Gemini's free-tier daily quota (20 requests/day) — every other step of both is independently verified working against production. Not a code issue; retest once the quota resets.
+- **Flashcards backend hand-off (`POST /flashcards/generate`), new scope beyond the original 65 tasks:** implemented, reusing the existing RAG/chat pipeline plus a new Postgres-backed `gemini_daily_usage` counter so it draws from its own slice of the shared 20/day Gemini budget instead of an untracked free-for-all. Live in production.
+- **Upstash Redis hit its own monthly request cap post-deploy**, which put the BullMQ ingestion worker into a tight, log-flooding failure loop inside the same process serving chat/voice/flashcards. Fixed by gating the worker behind `INGESTION_WORKER_ENABLED` (default `true`, set `false` on Railway) — ingestion (`POST /papers`) is a clean no-op until re-enabled; nothing else depends on Redis. No Upstash upgrade needed; flip the flag back when ingestion is actually needed again.
+- **Gemini's `generateContent` call is now resilient to its own two live failure modes**, neither of which is quota: a fast `503 high demand` and a hang with zero bytes back. Both `GeminiChatService` and `FlashcardGeneratorService` retry with exponential backoff on either condition (never on `429`, which retrying can't fix), and both are bounded by a 45s abort timeout so a hang can't block a request forever. `FlashcardsController` also refunds its reserved quota slot if generation ultimately fails, so a Gemini-side failure no longer permanently costs part of the feature's daily budget.
+- **Remaining (2 tasks, both otherwise complete):** Task 64's final citation check and Task 35's final chat-answer check are blocked purely on Google Gemini's free-tier daily quota (20 requests/day) — every other step of both, and the full retry/timeout/quota-refund path around them, is independently verified working against production. Not a code issue; retest once the quota resets.
 
 ## Global Constraints
 
