@@ -88,6 +88,10 @@ describe('POST /voice/ask (e2e)', () => {
 
     expect(res.headers['content-type']).toBe('application/octet-stream');
     expect(res.body.length).toBeGreaterThan(0);
+
+    // Base64-encoded so BLE-app-facing header values stay ASCII-safe even for Sinhala/Tamil text.
+    expect(Buffer.from(res.headers['x-question-text'], 'base64').toString('utf8').length).toBeGreaterThan(0);
+    expect(Buffer.from(res.headers['x-answer-text'], 'base64').toString('utf8').length).toBeGreaterThan(0);
   }, 30_000);
 
   it('returns a synthesized "not supported" message (not a bare error) for medium=sinhala', async () => {
@@ -100,5 +104,11 @@ describe('POST /voice/ask (e2e)', () => {
 
     expect(res.headers['content-type']).toBe('application/octet-stream');
     expect(res.body.length).toBeGreaterThan(0);
+
+    // X-Question-Text is present but decodes empty: STT declines before transcribing on this path.
+    expect(res.headers['x-question-text']).toBe('');
+    expect(Buffer.from(res.headers['x-answer-text'], 'base64').toString('utf8')).toBe(
+      "Sorry, voice isn't available in Sinhala yet. Please use the app for Sinhala questions.",
+    );
   }, 30_000);
 });

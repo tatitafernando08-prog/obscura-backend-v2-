@@ -81,6 +81,8 @@ export class VoiceController {
       if (transcribeResult.error === 'sinhala_not_supported_on_voice') {
         const declineText = "Sorry, voice isn't available in Sinhala yet. Please use the app for Sinhala questions.";
         const synth = await firstValueFrom(this.speechClient.synthesize({ text: declineText, medium: 'english' }));
+        res.setHeader('X-Question-Text', Buffer.from(transcribeResult.text, 'utf8').toString('base64'));
+        res.setHeader('X-Answer-Text', Buffer.from(declineText, 'utf8').toString('base64'));
         res.setHeader('Content-Type', 'application/octet-stream');
         // Use the same field-name-corrected extraction as the success path (see comment below)
         const pcm = (synth as unknown as Record<string, Uint8Array>)['pcm16_16kMono'];
@@ -125,6 +127,8 @@ export class VoiceController {
     // even though @Res() hands off response-sending to us directly. Explicit
     // 200 here overrides that default for the actual success case.
     res.status(200);
+    res.setHeader('X-Question-Text', Buffer.from(transcribeResult.text, 'utf8').toString('base64'));
+    res.setHeader('X-Answer-Text', Buffer.from(askResult.answer, 'utf8').toString('base64'));
     res.setHeader('Content-Type', 'application/octet-stream');
     // Field-name gotcha (discovered running this controller's own e2e test):
     // the compile-time `SpeechServiceClient` type from ts-proto names this

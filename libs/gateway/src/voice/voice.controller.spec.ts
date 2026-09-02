@@ -63,4 +63,54 @@ describe('VoiceController', () => {
       expect.objectContaining({ requestId: 'req-abc-123' }),
     );
   });
+
+  it('sets X-Question-Text and X-Answer-Text response headers, base64-encoded, on the success path', async () => {
+    transcribe.mockReturnValue(of({ success: true, text: 'ඉල්ලුම කියන්නේ මොකක්ද' }));
+    synthesize.mockReturnValue(of({ success: true, pcm16_16kMono: Buffer.from('audio') }));
+    getOrCreateForDevice.mockResolvedValue('device-session-1');
+    getRecentHistory.mockResolvedValue([]);
+    ask.mockResolvedValue({ answer: 'ඉල්ලුම යනු මිලකදී භාණ්ඩයක් මිලදී ගැනීමට ඇති කැමැත්තයි', sources: [] });
+
+    const req = { device: { deviceId: 'device-1', ownerStudentId: null }, requestId: 'req-1' } as any;
+    const res = mockResponse();
+
+    await controller.ask(
+      { buffer: Buffer.from('wav') } as any,
+      { subject: 'Economics', medium: 'sinhala' },
+      req,
+      res,
+    );
+
+    expect(res.setHeader).toHaveBeenCalledWith(
+      'X-Question-Text',
+      Buffer.from('ඉල්ලුම කියන්නේ මොකක්ද', 'utf8').toString('base64'),
+    );
+    expect(res.setHeader).toHaveBeenCalledWith(
+      'X-Answer-Text',
+      Buffer.from('ඉල්ලුම යනු මිලකදී භාණ්ඩයක් මිලදී ගැනීමට ඇති කැමැත්තයි', 'utf8').toString('base64'),
+    );
+  });
+
+  it('sets X-Question-Text and X-Answer-Text response headers on the Sinhala-not-supported-on-voice decline path', async () => {
+    transcribe.mockReturnValue(of({ success: false, text: '', error: 'sinhala_not_supported_on_voice' }));
+    synthesize.mockReturnValue(of({ success: true, pcm16_16kMono: Buffer.from('audio') }));
+
+    const req = { device: { deviceId: 'device-1', ownerStudentId: null }, requestId: 'req-2' } as any;
+    const res = mockResponse();
+
+    await controller.ask(
+      { buffer: Buffer.from('wav') } as any,
+      { subject: undefined, medium: 'sinhala' },
+      req,
+      res,
+    );
+
+    const declineText = "Sorry, voice isn't available in Sinhala yet. Please use the app for Sinhala questions.";
+    // STT never transcribes on this path (it declines before that), so the question is empty — still present, so the app can tell "no question captured" from "header missing".
+    expect(res.setHeader).toHaveBeenCalledWith('X-Question-Text', '');
+    expect(res.setHeader).toHaveBeenCalledWith(
+      'X-Answer-Text',
+      Buffer.from(declineText, 'utf8').toString('base64'),
+    );
+  });
 });
