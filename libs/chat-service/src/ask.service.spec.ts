@@ -43,15 +43,19 @@ describe('ChatLlmAskService', () => {
     expect(generate).toHaveBeenCalledTimes(1);
   });
 
-  it('retries once with a stricter prompt when a curriculum question gets zero citations', async () => {
+  it('retries once with a stricter prompt when a curriculum question gets zero citations, and surfaces the labeled general-knowledge fallback', async () => {
     generate
       .mockResolvedValueOnce({ answer: 'Some hallucinated answer', isCurriculumQuestion: true, citedIndices: [] })
-      .mockResolvedValueOnce({ answer: "I don't have that in the past papers I have yet.", isCurriculumQuestion: true, citedIndices: [] });
+      .mockResolvedValueOnce({
+        answer: "I couldn't find this in your past papers, but here's a general explanation: marginal supply is...",
+        isCurriculumQuestion: true,
+        citedIndices: [],
+      });
 
     const result = await service.ask({ questionText: 'q', medium: 'english', history: [], chunks });
 
     expect(generate).toHaveBeenCalledTimes(2);
-    expect(result.answer).toMatch(/don't have that/i);
+    expect(result.answer).toMatch(/couldn't find this in your past papers/i);
     expect(result.sources).toEqual([]);
     expect(result.grounded).toBe(false);
   });
@@ -67,15 +71,19 @@ describe('ChatLlmAskService', () => {
     expect(result.sources).toEqual([{ subject: 'Economics', year: '2022' }]);
   });
 
-  it('retries when curriculum question cites a non-existent chunk index', async () => {
+  it('retries when curriculum question cites a non-existent chunk index, and still returns an ungrounded result with empty sources', async () => {
     generate
       .mockResolvedValueOnce({ answer: 'hallucinated answer with fake citation', isCurriculumQuestion: true, citedIndices: [99] })
-      .mockResolvedValueOnce({ answer: "I don't have that information.", isCurriculumQuestion: true, citedIndices: [] });
+      .mockResolvedValueOnce({
+        answer: "I couldn't find this in your past papers, but here's a general explanation: ...",
+        isCurriculumQuestion: true,
+        citedIndices: [],
+      });
 
     const result = await service.ask({ questionText: 'q', medium: 'english', history: [], chunks });
 
     expect(generate).toHaveBeenCalledTimes(2);
-    expect(result.answer).toMatch(/don't have that/i);
+    expect(result.answer).toMatch(/couldn't find this in your past papers/i);
     expect(result.sources).toEqual([]);
     expect(result.grounded).toBe(false);
   });

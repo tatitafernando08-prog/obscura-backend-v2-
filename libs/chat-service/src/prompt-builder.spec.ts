@@ -10,7 +10,13 @@ describe('buildPrompt', () => {
 
   it('numbers excerpts starting at 1 and includes their content', () => {
     const prompt = buildPrompt(baseInput);
-    expect(prompt).toContain('[1] The law of demand states...');
+    expect(prompt).toContain('The law of demand states...');
+    expect(prompt).toMatch(/\[1\][^\n]*The law of demand states\.\.\./);
+  });
+
+  it('includes each excerpt\'s subject and year so the model can cite them by name', () => {
+    const prompt = buildPrompt(baseInput);
+    expect(prompt).toMatch(/\[1\][^\n]*Economics[^\n]*2022/);
   });
 
   it('instructs the model to answer in the requested medium', () => {
@@ -18,9 +24,12 @@ describe('buildPrompt', () => {
     expect(prompt).toMatch(/sinhala/i);
   });
 
-  it('includes the hard grounding rule: decline rather than answer from general knowledge when ungrounded', () => {
+  it('includes the labeled-fallback rule: general knowledge answers must be flagged, not declined', () => {
     const prompt = buildPrompt(baseInput);
-    expect(prompt).toMatch(/do not (use|answer from) (outside|general) knowledge/i);
+    expect(prompt).not.toMatch(/do not (use|answer from) (outside|general) knowledge/i);
+    expect(prompt).toMatch(/do not decline/i);
+    expect(prompt).toMatch(/couldn't find this in your past papers, but here's a general explanation/i);
+    expect(prompt).toMatch(/cited_indices to an empty array/i);
   });
 
   it('requests structured JSON output with answer, is_curriculum_question, cited_indices', () => {
@@ -37,15 +46,37 @@ describe('buildPrompt', () => {
     expect(heyIndex).toBeGreaterThan(hiIndex);
   });
 
-  it('adds a stricter cite-or-decline instruction when strict=true', () => {
+  it('adds a stricter cite-or-labeled-fallback instruction when strict=true', () => {
     const normal = buildPrompt(baseInput);
     const strict = buildPrompt({ ...baseInput, strict: true });
     expect(strict.length).toBeGreaterThan(normal.length);
-    expect(strict).toMatch(/must (cite|decline)/i);
+    expect(strict).toMatch(/must (cite|.*general knowledge)/i);
+    expect(strict).not.toMatch(/must (cite|decline)/i);
   });
 
-  it('handles zero retrieved chunks by instructing a decline for curriculum questions', () => {
+  it('handles zero retrieved chunks by rendering the no-excerpts placeholder', () => {
     const prompt = buildPrompt({ ...baseInput, chunks: [] });
     expect(prompt).toMatch(/no excerpts/i);
+  });
+
+  it('instructs a warm, tutor-like tone rather than a formal report', () => {
+    const prompt = buildPrompt(baseInput);
+    expect(prompt).toMatch(/tutor/i);
+  });
+
+  it('instructs expanded, multi-paragraph explanations over bare definitions', () => {
+    const prompt = buildPrompt(baseInput);
+    expect(prompt).toMatch(/paragraphs/i);
+  });
+
+  it('instructs naming the excerpt source naturally inline in the answer', () => {
+    const prompt = buildPrompt(baseInput);
+    expect(prompt).toMatch(/name (its|the) source/i);
+  });
+
+  it('instructs quoting the excerpt\'s original exam wording when relevant', () => {
+    const prompt = buildPrompt(baseInput);
+    expect(prompt).toMatch(/quote/i);
+    expect(prompt).toMatch(/how it (was|is) (actually )?(asked|phrased)/i);
   });
 });

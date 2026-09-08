@@ -49,7 +49,11 @@ export class ChatLlmAskService {
   }
 
   private isGrounded(result: { isCurriculumQuestion: boolean }, sources: SourceCitation[]): boolean {
-    // Small talk never needs grounding. Curriculum questions need at least one RESOLVED source.
+    // Small talk never needs grounding. Curriculum questions need at least one RESOLVED
+    // source. grounded=false is not an error state: per prompt-builder's Rule 3, the model
+    // is expected to answer such questions from general knowledge with a labeled fallback
+    // rather than decline, and sources staying empty here is exactly what keeps the frontend
+    // from showing a citation chip on that ungrounded answer.
     return !result.isCurriculumQuestion || sources.length > 0;
   }
 
