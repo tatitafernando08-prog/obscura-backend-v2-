@@ -7,6 +7,7 @@ export interface EnvConfig {
   SUPABASE_ANON_KEY: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
   SUPABASE_JWKS_URL: string;
+  SUPABASE_JWT_SECRET?: string;
   DATABASE_URL: string;
   REDIS_URL: string;
   INGESTION_WORKER_ENABLED: boolean;
@@ -28,6 +29,11 @@ export const envValidationSchema = Joi.object<EnvConfig, true>({
   SUPABASE_ANON_KEY: Joi.string().required(),
   SUPABASE_SERVICE_ROLE_KEY: Joi.string().required(),
   SUPABASE_JWKS_URL: Joi.string().uri().required(),
+  // Supabase's legacy shared HS256 signing secret. Optional: only needed
+  // while tokens signed under a rotated-out legacy key are still valid (i.e.
+  // pre-rotation sessions that haven't expired yet). Without it, kid-less
+  // tokens can't be verified at all -- see jwt-verifier.service.ts.
+  SUPABASE_JWT_SECRET: Joi.string().optional(),
   DATABASE_URL: Joi.string().uri().required(),
   REDIS_URL: Joi.string().uri().required(),
   // Lets the BullMQ ingestion worker be stopped independently of Redis's own

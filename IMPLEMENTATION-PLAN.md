@@ -4130,34 +4130,54 @@ koyeb service create obscura-api \
 
 - [ ] **Step 3: Set secrets**
 
+All values below must come from the **live** Supabase project (`zsdsqyowcjifbktbolji`), never the local dev project -- pointing `SUPABASE_URL`/`SUPABASE_JWKS_URL` at the wrong project passes Joi validation (both are just well-formed URLs) but silently rejects every real user's JWT, since each Supabase project has its own independent signing keypair and `kid`. (Confirmed in production 2026-09-06: this exact mismatch caused `/chat/ask`, `/flashcards/generate`, and `/papers` to reject every genuine login with `invalid_or_expired_token`.)
+
 ```bash
-for key in SUPABASE_URL SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY SUPABASE_JWT_SECRET DATABASE_URL REDIS_URL GEMINI_API_KEY COHERE_API_KEY; do
+for key in SUPABASE_URL SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY SUPABASE_JWKS_URL DATABASE_URL REDIS_URL GEMINI_API_KEY COHERE_API_KEY; do
   koyeb secret create "$key" --value "<paste-real-value>"
 done
 koyeb service update obscura-api \
   --env SUPABASE_URL=@SUPABASE_URL \
   --env SUPABASE_ANON_KEY=@SUPABASE_ANON_KEY \
   --env SUPABASE_SERVICE_ROLE_KEY=@SUPABASE_SERVICE_ROLE_KEY \
-  --env SUPABASE_JWT_SECRET=@SUPABASE_JWT_SECRET \
+  --env SUPABASE_JWKS_URL=@SUPABASE_JWKS_URL \
   --env DATABASE_URL=@DATABASE_URL \
   --env REDIS_URL=@REDIS_URL \
   --env GEMINI_API_KEY=@GEMINI_API_KEY \
   --env COHERE_API_KEY=@COHERE_API_KEY
 ```
 
+**Railway equivalent** (actual deploy target since the Koyeb-to-Railway switch noted at the top of this file):
+```bash
+railway variables --service obscura-api --environment production \
+  --set "SUPABASE_URL=https://zsdsqyowcjifbktbolji.supabase.co" \
+  --set "SUPABASE_ANON_KEY=<live-project-anon-key>" \
+  --set "SUPABASE_SERVICE_ROLE_KEY=<live-project-service-role-key>" \
+  --set "SUPABASE_JWKS_URL=https://zsdsqyowcjifbktbolji.supabase.co/auth/v1/.well-known/jwks.json" \
+  --set "DATABASE_URL=<live-database-url>" \
+  --set "REDIS_URL=<live-redis-url>" \
+  --set "GEMINI_API_KEY=<key>" \
+  --set "COHERE_API_KEY=<key>"
+railway up --service obscura-api --ci
+```
+
 - [ ] **Step 4: Wait for deploy and smoke-test**
 
+Koyeb:
 ```bash
 koyeb service get obscura-api
 ```
-Wait until status is `HEALTHY`, then note the public URL (`https://<something>.koyeb.app`):
+Wait until status is `HEALTHY`, then note the public URL (`https://<something>.koyeb.app`).
+
+Railway: `railway status` shows deploy state and the live URL (`https://obscura-api-production-1ffa.up.railway.app`).
+
 ```bash
-curl -s -X POST https://<your-app>.koyeb.app/chat/ask \
+curl -s -X POST https://obscura-api-production-1ffa.up.railway.app/chat/ask \
   -H "Authorization: Bearer $TEST_STUDENT_JWT" \
   -H "Content-Type: application/json" \
   -d '{"question":"What is the law of demand?","subject":"Economics","syllabus":"local","medium":"english","student_id":"'"$TEST_STUDENT_ID"'","chat_history":[]}'
 ```
-Expected: same successful, cited response as Task 32's local test — note that the seed script (Task 23) must be re-run once, pointed at the production `DATABASE_URL`, before this returns citations (Koyeb's Postgres is the same Supabase dev project, so this is usually already true if you ran `npm run seed:papers` with `.env` pointed at the dev project).
+Expected: same successful, cited response as Task 32's local test — note that the seed script (Task 23) must be re-run once, pointed at the production `DATABASE_URL`, before this returns citations.
 
 - [ ] **Step 5: Point the mobile app at production (optional at this stage)**
 
